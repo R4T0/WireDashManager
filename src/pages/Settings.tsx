@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMikrotik } from '@/contexts/MikrotikContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,16 +7,67 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+// Interface for default wireguard settings
+interface WireguardDefaults {
+  endpoint: string;
+  port: string;
+  allowedIpRange: string;
+  dns: string;
+}
 
 const Settings = () => {
   const { config, updateConfig, saveConfig, testConnection } = useMikrotik();
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingDefaults, setSavingDefaults] = useState(false);
+  
+  // Wireguard defaults state
+  const [defaults, setDefaults] = useState<WireguardDefaults>({
+    endpoint: '',
+    port: '51820',
+    allowedIpRange: '10.0.0.0/24',
+    dns: '1.1.1.1'
+  });
+
+  useEffect(() => {
+    // Load wireguard defaults on component mount
+    loadDefaultsFromSupabase();
+  }, []);
+
+  const loadDefaultsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wireguard_defaults')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+        console.error('Error loading defaults:', error);
+        return;
+      }
+
+      if (data) {
+        setDefaults({
+          endpoint: data.endpoint || '',
+          port: data.port || '51820',
+          allowedIpRange: data.allowed_ip_range || '10.0.0.0/24',
+          dns: data.dns || '1.1.1.1'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load defaults from Supabase:', error);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      saveConfig();
+      await saveConfig();
     } finally {
       setSaving(false);
     }
@@ -28,6 +79,39 @@ const Settings = () => {
       await testConnection();
     } finally {
       setTesting(false);
+    }
+  };
+
+  const updateDefaults = (key: keyof WireguardDefaults, value: string) => {
+    setDefaults(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveDefaults = async () => {
+    setSavingDefaults(true);
+    try {
+      // Save wireguard defaults to Supabase
+      const { error } = await supabase
+        .from('wireguard_defaults')
+        .upsert({
+          endpoint: defaults.endpoint,
+          port: defaults.port,
+          allowed_ip_range: defaults.allowedIpRange,
+          dns: defaults.dns
+        })
+        .select();
+
+      if (error) {
+        console.error('Error saving defaults:', error);
+        toast.error('Falha ao salvar configurações padrão');
+        return;
+      }
+
+      toast.success('Configurações padrão salvas com sucesso');
+    } catch (error) {
+      console.error('Failed to save defaults:', error);
+      toast.error('Falha ao salvar configurações padrão');
+    } finally {
+      setSavingDefaults(false);
     }
   };
 
@@ -161,7 +245,8 @@ const Settings = () => {
                     <Input
                       placeholder="vpn.example.com"
                       className="form-input"
-                      defaultValue=""
+                      value={defaults.endpoint}
+                      onChange={(e) => updateDefaults('endpoint', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -171,7 +256,8 @@ const Settings = () => {
                     <Input
                       placeholder="51820"
                       className="form-input"
-                      defaultValue="51820"
+                      value={defaults.port}
+                      onChange={(e) => updateDefaults('port', e.target.value)}
                     />
                   </div>
                 </div>
@@ -184,7 +270,8 @@ const Settings = () => {
                     <Input
                       placeholder="10.0.0.0/24"
                       className="form-input"
-                      defaultValue="10.0.0.0/24"
+                      value={defaults.allowedIpRange}
+                      onChange={(e) => updateDefaults('allowedIpRange', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -194,15 +281,20 @@ const Settings = () => {
                     <Input
                       placeholder="1.1.1.1"
                       className="form-input"
-                      defaultValue="1.1.1.1"
+                      value={defaults.dns}
+                      onChange={(e) => updateDefaults('dns', e.target.value)}
                     />
                   </div>
                 </div>
                 
                 <div className="flex justify-end mt-4">
-                  <Button className="primary-button">
+                  <Button 
+                    className="primary-button"
+                    onClick={handleSaveDefaults}
+                    disabled={savingDefaults}
+                  >
                     <Save className="mr-2 h-4 w-4" />
-                    Salvar Configurações Padrão
+                    {savingDefaults ? 'Salvando...' : 'Salvar Configurações Padrão'}
                   </Button>
                 </div>
               </div>

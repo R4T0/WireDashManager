@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MikrotikConfig {
   address: string;
@@ -13,7 +14,7 @@ interface MikrotikConfig {
 interface MikrotikContextType {
   config: MikrotikConfig;
   updateConfig: (newConfig: Partial<MikrotikConfig>) => void;
-  saveConfig: () => void;
+  saveConfig: () => Promise<void>;
   testConnection: () => Promise<boolean>;
   isConfigured: boolean;
   isConnected: boolean;
@@ -30,25 +31,78 @@ const defaultConfig: MikrotikConfig = {
 const MikrotikContext = createContext<MikrotikContextType | undefined>(undefined);
 
 export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [config, setConfig] = useState<MikrotikConfig>(() => {
-    const savedConfig = localStorage.getItem('mikrotikConfig');
-    return savedConfig ? JSON.parse(savedConfig) : defaultConfig;
-  });
-  
+  const [config, setConfig] = useState<MikrotikConfig>(defaultConfig);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Load config from Supabase on component mount
+    loadConfigFromSupabase();
+  }, []);
 
   useEffect(() => {
     setIsConfigured(Boolean(config.address && config.username && config.password));
   }, [config]);
 
+  const loadConfigFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('mikrotik_config')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error('Error loading config:', error);
+        return;
+      }
+
+      if (data) {
+        setConfig({
+          address: data.address,
+          port: data.port,
+          username: data.username,
+          password: data.password,
+          useHttps: data.use_https || false,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load config from Supabase:', error);
+    }
+  };
+
   const updateConfig = (newConfig: Partial<MikrotikConfig>) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
   };
 
-  const saveConfig = () => {
-    localStorage.setItem('mikrotikConfig', JSON.stringify(config));
-    toast.success('Configurações salvas com sucesso');
+  const saveConfig = async () => {
+    try {
+      // Save to Supabase
+      const { error } = await supabase
+        .from('mikrotik_config')
+        .upsert({
+          address: config.address,
+          port: config.port,
+          username: config.username,
+          password: config.password,
+          use_https: config.useHttps,
+        })
+        .select();
+
+      if (error) {
+        console.error('Error saving config:', error);
+        toast.error('Falha ao salvar configurações');
+        return;
+      }
+
+      // Also save to localStorage as backup
+      localStorage.setItem('mikrotikConfig', JSON.stringify(config));
+      toast.success('Configurações salvas com sucesso');
+    } catch (error) {
+      console.error('Failed to save config:', error);
+      toast.error('Falha ao salvar configurações');
+    }
   };
 
   const testConnection = async (): Promise<boolean> => {

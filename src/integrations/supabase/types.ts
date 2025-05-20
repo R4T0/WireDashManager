@@ -9,7 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      mikrotik_config: {
+        Row: {
+          address: string
+          created_at: string | null
+          id: string
+          password: string
+          port: string
+          updated_at: string | null
+          use_https: boolean | null
+          username: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          id?: string
+          password: string
+          port: string
+          updated_at?: string | null
+          use_https?: boolean | null
+          username: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          id?: string
+          password?: string
+          port?: string
+          updated_at?: string | null
+          use_https?: boolean | null
+          username?: string
+        }
+        Relationships: []
+      }
+      wireguard_defaults: {
+        Row: {
+          allowed_ip_range: string | null
+          created_at: string | null
+          dns: string | null
+          endpoint: string | null
+          id: string
+          port: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_ip_range?: string | null
+          created_at?: string | null
+          dns?: string | null
+          endpoint?: string | null
+          id?: string
+          port?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_ip_range?: string | null
+          created_at?: string | null
+          dns?: string | null
+          endpoint?: string | null
+          id?: string
+          port?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

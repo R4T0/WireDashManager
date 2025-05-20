@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useMikrotik } from '@/contexts/MikrotikContext';
 import MikrotikApi, { WireguardPeer } from '@/services/mikrotikService';
@@ -10,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
 import { DownloadCloud, QrCode, Search } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const QRCodePage = () => {
   const { config, isConnected, testConnection } = useMikrotik();
@@ -20,8 +20,16 @@ const QRCodePage = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [configText, setConfigText] = useState('');
+  const [defaults, setDefaults] = useState({
+    endpoint: 'vpn.example.com',
+    port: '51820',
+    dns: '1.1.1.1'
+  });
 
   useEffect(() => {
+    // Load wireguard defaults
+    loadDefaultsFromSupabase();
+    
     if (isConnected) {
       fetchPeers();
     } else {
@@ -39,6 +47,32 @@ const QRCodePage = () => {
       setFilteredPeers(filtered);
     }
   }, [searchQuery, peers]);
+
+  const loadDefaultsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wireguard_defaults')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+        console.error('Error loading defaults:', error);
+        return;
+      }
+
+      if (data) {
+        setDefaults({
+          endpoint: data.endpoint || 'vpn.example.com',
+          port: data.port || '51820',
+          dns: data.dns || '1.1.1.1'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load defaults from Supabase:', error);
+    }
+  };
 
   const fetchPeers = async () => {
     setLoading(true);
@@ -71,12 +105,12 @@ const QRCodePage = () => {
     return `[Interface]
 PrivateKey = <private_key_would_be_here>
 Address = ${peer.allowedAddress}
-DNS = 1.1.1.1
+DNS = ${defaults.dns}
 
 [Peer]
 PublicKey = <server_public_key_would_be_here>
 AllowedIPs = 0.0.0.0/0, ::/0
-Endpoint = ${peer.endpoint || 'vpn.example.com'}:${peer.endpointPort || '51820'}
+Endpoint = ${peer.endpoint || defaults.endpoint}:${peer.endpointPort || defaults.port}
 `;
   };
 
