@@ -5,14 +5,12 @@ import MikrotikConnectionSettings from '@/components/settings/MikrotikConnection
 import WireguardDefaultSettings from '@/components/settings/WireguardDefaultSettings';
 import UserManagementSettings from '@/components/settings/UserManagementSettings';
 import LogViewer from '@/components/debug/LogViewer';
+import SettingsHeader from '@/components/settings/SettingsHeader';
 
 const Settings = () => {
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Configurações</h1>
-      <p className="text-wireguard-muted-foreground mb-6">
-        Configure as configurações do sistema e valores padrão
-      </p>
+      <SettingsHeader />
       
       <Tabs defaultValue="mikrotik">
         <TabsList className="mb-6">
