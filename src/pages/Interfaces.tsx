@@ -4,14 +4,12 @@ import { useMikrotik } from '@/contexts/MikrotikContext';
 import MikrotikApi, { WireguardInterface } from '@/services/mikrotikService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/sonner';
-import { Edit, Network, Plus, Trash } from 'lucide-react';
+import { Network, Plus } from 'lucide-react';
 import LogViewer from '@/components/debug/LogViewer';
+import InterfaceList from '@/components/interfaces/InterfaceList';
+import InterfaceFormDialog from '@/components/interfaces/InterfaceFormDialog';
+import NotConnected from '@/components/interfaces/NotConnected';
 
 const Interfaces = () => {
   const { config, isConnected, testConnection } = useMikrotik();
@@ -129,15 +127,7 @@ const Interfaces = () => {
   };
 
   if (!isConnected) {
-    return (
-      <div className="text-center py-10">
-        <h2 className="text-xl font-semibold mb-4">Não conectado ao roteador</h2>
-        <p className="text-wireguard-muted-foreground mb-6">
-          Por favor, configure a conexão com o roteador Mikrotik primeiro.
-        </p>
-        <Button onClick={() => testConnection()}>Conectar</Button>
-      </div>
-    );
+    return <NotConnected onConnect={testConnection} />;
   }
 
   return (
@@ -160,126 +150,26 @@ const Interfaces = () => {
           <CardTitle>Interfaces WireGuard</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-6">Carregando interfaces...</div>
-          ) : interfaces.length === 0 ? (
-            <div className="text-center py-6 text-wireguard-muted-foreground">
-              Nenhuma interface encontrada. Clique em "Adicionar Interface" para criar uma nova.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Porta</TableHead>
-                  <TableHead>MTU</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {interfaces.map((iface) => (
-                  <TableRow key={iface.id}>
-                    <TableCell className="font-medium">{iface.name}</TableCell>
-                    <TableCell>{iface.listenPort}</TableCell>
-                    <TableCell>{iface.mtu}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs ${iface.disabled ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>
-                        {iface.disabled ? 'Desativado' : (iface.running ? 'Rodando' : 'Parado')}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(iface)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(iface.id)}>
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <InterfaceList 
+            interfaces={interfaces}
+            loading={loading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </CardContent>
       </Card>
       
       <LogViewer />
 
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="bg-wireguard-muted/80 backdrop-blur-sm border border-wireguard-muted">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? 'Editar Interface' : 'Adicionar Interface'}</DialogTitle>
-            <DialogDescription>
-              {isEditing 
-                ? 'Edite as informações da interface WireGuard.'
-                : 'Preencha os dados para criar uma nova interface WireGuard.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nome
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                className="col-span-3 form-input"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="listenPort" className="text-right">
-                Porta
-              </Label>
-              <Input
-                id="listenPort"
-                value={formData.listenPort}
-                onChange={(e) => handleChange('listenPort', e.target.value)}
-                className="col-span-3 form-input"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="mtu" className="text-right">
-                MTU
-              </Label>
-              <Input
-                id="mtu"
-                value={formData.mtu}
-                onChange={(e) => handleChange('mtu', e.target.value)}
-                className="col-span-3 form-input"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="disabled" className="text-right">
-                Desativado
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <Switch
-                  id="disabled"
-                  checked={formData.disabled}
-                  onCheckedChange={(checked) => handleChange('disabled', checked)}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} className="primary-button">
-              {isEditing ? 'Salvar Alterações' : 'Criar Interface'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InterfaceFormDialog
+        open={openDialog}
+        onOpenChange={setOpenDialog}
+        selectedInterface={selectedInterface}
+        isEditing={isEditing}
+        formData={formData}
+        onFormChange={handleChange}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };
