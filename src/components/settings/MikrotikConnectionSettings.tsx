@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save } from 'lucide-react';
+import { Save, Plug } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const MikrotikConnectionSettings = () => {
-  const { config, updateConfig, saveConfig, testConnection } = useMikrotik();
+  const { config, updateConfig, saveConfig, testConnection, isConnected } = useMikrotik();
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +41,14 @@ const MikrotikConnectionSettings = () => {
       </CardHeader>
       <CardContent>
         <div className="grid gap-6">
+          {isConnected && (
+            <Alert className="bg-green-100 border-green-400 text-green-800">
+              <AlertDescription>
+                Conexão verificada e funcionando
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="address" className="form-label">
@@ -112,6 +121,7 @@ const MikrotikConnectionSettings = () => {
               disabled={testing}
               className="secondary-button"
             >
+              <Plug className="mr-2 h-4 w-4" />
               {testing ? 'Testando...' : 'Testar Conexão'}
             </Button>
             <Button 

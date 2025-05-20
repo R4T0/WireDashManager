@@ -18,6 +18,7 @@ interface MikrotikContextType {
   testConnection: () => Promise<boolean>;
   isConfigured: boolean;
   isConnected: boolean;
+  configId: string | null;
 }
 
 const defaultConfig: MikrotikConfig = {
@@ -34,6 +35,7 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [config, setConfig] = useState<MikrotikConfig>(defaultConfig);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
+  const [configId, setConfigId] = useState<string | null>(null);
 
   useEffect(() => {
     // Load config from Supabase on component mount
@@ -66,6 +68,7 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
           password: data.password,
           useHttps: data.use_https || false,
         });
+        setConfigId(data.id);
       }
     } catch (error) {
       console.error('Failed to load config from Supabase:', error);
@@ -78,22 +81,46 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const saveConfig = async () => {
     try {
-      // Save to Supabase
-      const { error } = await supabase
-        .from('mikrotik_config')
-        .upsert({
-          address: config.address,
-          port: config.port,
-          username: config.username,
-          password: config.password,
-          use_https: config.useHttps,
-        })
-        .select();
+      if (configId) {
+        // Update existing record
+        const { error } = await supabase
+          .from('mikrotik_config')
+          .update({
+            address: config.address,
+            port: config.port,
+            username: config.username,
+            password: config.password,
+            use_https: config.useHttps,
+          })
+          .eq('id', configId);
 
-      if (error) {
-        console.error('Error saving config:', error);
-        toast.error('Falha ao salvar configurações');
-        return;
+        if (error) {
+          console.error('Error updating config:', error);
+          toast.error('Falha ao atualizar configurações');
+          return;
+        }
+      } else {
+        // Insert new record
+        const { data, error } = await supabase
+          .from('mikrotik_config')
+          .insert({
+            address: config.address,
+            port: config.port,
+            username: config.username,
+            password: config.password,
+            use_https: config.useHttps,
+          })
+          .select();
+
+        if (error) {
+          console.error('Error saving config:', error);
+          toast.error('Falha ao salvar configurações');
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          setConfigId(data[0].id);
+        }
       }
 
       // Also save to localStorage as backup
@@ -107,20 +134,38 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const testConnection = async (): Promise<boolean> => {
     try {
-      // In a real application, we would make an actual API call here
-      // For this demo, we'll simulate a successful connection if the config is valid
+      // Validate required fields first
       if (!config.address || !config.username || !config.password) {
         toast.error('Por favor, preencha todos os campos obrigatórios');
         return false;
       }
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make an actual API call to the system resource endpoint
+      const protocol = config.useHttps ? 'https' : 'http';
+      const url = `${protocol}://${config.address}${config.port ? `:${config.port}` : ''}/rest/system/resource`;
       
-      setIsConnected(true);
-      toast.success('Conexão estabelecida com sucesso');
-      return true;
+      const authHeader = 'Basic ' + btoa(`${config.username}:${config.password}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        }
+      });
+      
+      if (response.status === 200) {
+        setIsConnected(true);
+        toast.success('Conexão estabelecida com sucesso');
+        return true;
+      } else {
+        setIsConnected(false);
+        toast.error(`Falha na conexão: Status ${response.status}`);
+        return false;
+      }
     } catch (error) {
+      console.error('Connection test failed:', error);
       setIsConnected(false);
       toast.error('Falha ao conectar com o roteador Mikrotik');
       return false;
@@ -134,7 +179,8 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
       saveConfig, 
       testConnection, 
       isConfigured,
-      isConnected 
+      isConnected,
+      configId
     }}>
       {children}
     </MikrotikContext.Provider>
