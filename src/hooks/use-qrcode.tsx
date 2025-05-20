@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { WireguardPeer } from '@/services/mikrotikService';
+import { WireguardPeer } from '@/services/mikrotik/types';
 import { toast } from '@/components/ui/sonner';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
 import logger from '@/services/loggerService';
