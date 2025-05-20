@@ -33,7 +33,11 @@ const Interfaces = () => {
     if (isConnected) {
       fetchInterfaces();
     } else {
-      testConnection();
+      testConnection().then(success => {
+        if (success) {
+          fetchInterfaces();
+        }
+      });
     }
   }, [isConnected]);
 
@@ -42,6 +46,7 @@ const Interfaces = () => {
     try {
       const api = new MikrotikApi(config);
       const data = await api.getInterfaces();
+      console.log('Interfaces loaded:', data);
       setInterfaces(data);
     } catch (error) {
       console.error('Failed to fetch interfaces:', error);
@@ -81,8 +86,8 @@ const Interfaces = () => {
     }
     
     try {
-      // In a real app, this would call the API to delete the interface
-      // For this demo, we'll simulate a successful deletion
+      const api = new MikrotikApi(config);
+      await api.deleteInterface(id);
       toast.success('Interface excluída com sucesso');
       setInterfaces(prev => prev.filter(iface => iface.id !== id));
     } catch (error) {
@@ -97,15 +102,11 @@ const Interfaces = () => {
 
   const handleSubmit = async () => {
     try {
-      // In a real app, this would call the API to create/update the interface
-      // For this demo, we'll simulate a successful operation
+      const api = new MikrotikApi(config);
       
       if (isEditing && selectedInterface) {
         // Update existing interface
-        const updatedInterface = {
-          ...selectedInterface,
-          ...formData
-        };
+        const updatedInterface = await api.updateInterface(selectedInterface.id, formData);
         
         setInterfaces(prev => prev.map(iface => 
           iface.id === selectedInterface.id ? updatedInterface : iface
@@ -114,15 +115,9 @@ const Interfaces = () => {
         toast.success('Interface atualizada com sucesso');
       } else {
         // Create new interface
-        const newInterface = {
-          id: `new-${Date.now()}`,
-          ...formData,
-          privateKey: '*****',
-          publicKey: 'GENERATED_KEY_' + Math.random().toString(36).substring(2, 10),
-          running: !formData.disabled
-        };
+        const newInterface = await api.createInterface(formData);
         
-        setInterfaces(prev => [...prev, newInterface as WireguardInterface]);
+        setInterfaces(prev => [...prev, newInterface]);
         toast.success('Interface criada com sucesso');
       }
       

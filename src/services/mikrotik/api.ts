@@ -28,6 +28,19 @@ class MikrotikApi {
       logger.info('Headers:', this.headers);
       if (body) logger.info('Body:', body);
       
+      // For real API calls, we would use fetch like this:
+      // const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      //   method,
+      //   headers: this.headers,
+      //   body: method !== 'GET' ? JSON.stringify(body) : undefined
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error(`API request failed with status ${response.status}`);
+      // }
+      //
+      // return await response.json();
+      
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -62,11 +75,24 @@ class MikrotikApi {
     }
   }
 
-  // WireGuard specific methods
+  // WireGuard interface methods
   public async getInterfaces(): Promise<WireguardInterface[]> {
     return this.request<WireguardInterface[]>('/interface/wireguard', 'GET');
   }
 
+  public async createInterface(interfaceData: any): Promise<WireguardInterface> {
+    return this.request<WireguardInterface>('/interface/wireguard', 'PUT', interfaceData);
+  }
+
+  public async updateInterface(id: string, interfaceData: any): Promise<WireguardInterface> {
+    return this.request<WireguardInterface>(`/interface/wireguard/${id}`, 'PATCH', interfaceData);
+  }
+
+  public async deleteInterface(id: string): Promise<void> {
+    return this.request<void>(`/interface/wireguard/${id}`, 'DELETE');
+  }
+
+  // WireGuard peer methods
   public async getPeers(): Promise<WireguardPeer[]> {
     return this.request<WireguardPeer[]>('/interface/wireguard/peers', 'GET');
   }
