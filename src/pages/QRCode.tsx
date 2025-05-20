@@ -4,7 +4,7 @@ import { useMikrotik } from '@/contexts/MikrotikContext';
 import { useQRCode } from '@/hooks/use-qrcode';
 import PeerSearch from '@/components/qrcode/PeerSearch';
 import QRCodeDisplay from '@/components/qrcode/QRCodeDisplay';
-import NotConnected from '@/components/qrcode/NotConnected';
+import NotConnected from '@/components/peers/NotConnected';
 import LogViewer from '@/components/debug/LogViewer';
 import logger from '@/services/loggerService';
 
