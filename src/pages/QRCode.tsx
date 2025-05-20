@@ -5,9 +5,13 @@ import { useQRCode } from '@/hooks/use-qrcode';
 import PeerSearch from '@/components/qrcode/PeerSearch';
 import QRCodeDisplay from '@/components/qrcode/QRCodeDisplay';
 import NotConnected from '@/components/qrcode/NotConnected';
+import LogViewer from '@/components/debug/LogViewer';
+import logger from '@/services/loggerService';
 
 const QRCodePage = () => {
   const { config, isConnected, testConnection } = useMikrotik();
+  
+  logger.info('QRCodePage rendered', { isConnected });
   
   const {
     filteredPeers,
@@ -22,6 +26,7 @@ const QRCodePage = () => {
   } = useQRCode({ isConnected, testConnection, config });
 
   if (!isConnected) {
+    logger.warn('Not connected to router, showing NotConnected component');
     return <NotConnected onConnect={testConnection} />;
   }
 
@@ -50,6 +55,8 @@ const QRCodePage = () => {
           handleDownloadConfig={handleDownloadConfig}
         />
       </div>
+      
+      <LogViewer />
     </div>
   );
 };

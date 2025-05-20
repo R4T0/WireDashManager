@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { WireguardPeer } from '@/services/mikrotikService';
 import { toast } from '@/components/ui/sonner';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
+import logger from '@/services/loggerService';
 
 interface UseQRCodeProps {
   isConnected: boolean;
@@ -36,9 +37,18 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
     loadDefaultsFromSupabase();
     
     if (isConnected) {
+      logger.info("Connection is active, fetching peers");
       fetchPeers();
     } else {
-      testConnection();
+      logger.info("Not connected to router, testing connection");
+      testConnection().then(connected => {
+        if (connected) {
+          logger.info("Connection test successful, fetching peers");
+          fetchPeers();
+        } else {
+          logger.warn("Connection test failed");
+        }
+      });
     }
   }, [isConnected]);
 
@@ -49,12 +59,14 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
       const filtered = peers.filter(peer =>
         peer.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
+      logger.debug(`Filtered peers from ${peers.length} to ${filtered.length} with query: ${searchQuery}`);
       setFilteredPeers(filtered);
     }
   }, [searchQuery, peers]);
 
   const loadDefaultsFromSupabase = async () => {
     try {
+      logger.info("Loading WireGuard defaults from Supabase");
       const { data, error } = await supabase
         .from('wireguard_defaults')
         .select('*')
@@ -63,31 +75,37 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-        console.error('Error loading defaults:', error);
+        logger.error('Error loading defaults:', error);
         return;
       }
 
       if (data) {
+        logger.info("Loaded defaults from Supabase", data);
         setDefaults({
           endpoint: data.endpoint || 'vpn.example.com',
           port: data.port || '51820',
           dns: data.dns || '1.1.1.1'
         });
+      } else {
+        logger.warn("No defaults found in Supabase");
       }
     } catch (error) {
-      console.error('Failed to load defaults from Supabase:', error);
+      logger.error('Failed to load defaults from Supabase:', error);
     }
   };
 
   const fetchPeers = async () => {
     setLoading(true);
     try {
+      logger.info("Importing mikrotikService and fetching peers");
       const api = new (await import('@/services/mikrotikService')).default(config);
+      logger.info("API initialized, getting peers");
       const peersData = await api.getPeers();
+      logger.info(`Received ${peersData.length} peers from API`, peersData);
       setPeers(peersData);
       setFilteredPeers(peersData);
     } catch (error) {
-      console.error('Failed to fetch peers:', error);
+      logger.error('Failed to fetch peers:', error);
       toast.error('Falha ao carregar peers do roteador');
     } finally {
       setLoading(false);
@@ -97,9 +115,9 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   const handlePeerSelect = (peerId: string) => {
     const peer = peers.find(p => p.id === peerId);
     if (peer) {
+      logger.info(`Selected peer: ${peer.name} (${peer.interface})`, peer);
       setSelectedPeer(peer);
-      // In a real app, we would fetch the configuration for this peer
-      // For this demo, we'll generate a sample config
+      // Generate a sample config
       const sampleConfig = generateSampleConfig(peer);
       setConfigText(sampleConfig);
       handleGenerateQRCode(sampleConfig);
@@ -107,6 +125,11 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   };
 
   const generateSampleConfig = (peer: WireguardPeer) => {
+    logger.info(`Generating config for peer: ${peer.name}`, {
+      peer,
+      defaults
+    });
+    
     return `[Interface]
 PrivateKey = <private_key_would_be_here>
 Address = ${peer.allowedAddress}
@@ -121,22 +144,27 @@ Endpoint = ${peer.endpoint || defaults.endpoint}:${peer.endpointPort || defaults
 
   const handleGenerateQRCode = async (config: string) => {
     try {
+      logger.info("Generating QR code for config");
       const qrCode = await generateQRCode(config);
+      logger.debug("QR code generated successfully");
       setQrCodeUrl(qrCode);
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      logger.error('Failed to generate QR code:', error);
       toast.error('Falha ao gerar QR Code');
     }
   };
 
   const handleDownloadQrCode = () => {
     if (!qrCodeUrl || !selectedPeer) return;
+    logger.info(`Downloading QR Code for ${selectedPeer.name}`);
     saveQRCodeAsImage(qrCodeUrl, `${selectedPeer.name}-qrcode.png`);
     toast.success('QR Code baixado com sucesso');
   };
 
   const handleDownloadConfig = () => {
     if (!configText || !selectedPeer) return;
+    
+    logger.info(`Downloading config file for ${selectedPeer.name}`);
     
     // Create a blob with the config content
     const blob = new Blob([configText], { type: 'text/plain' });

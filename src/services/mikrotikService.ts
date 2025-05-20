@@ -1,5 +1,6 @@
 
 import { toast } from '@/components/ui/sonner';
+import logger from './loggerService';
 
 // Types
 export interface MikrotikConfig {
@@ -58,8 +59,9 @@ export interface WireguardConfig {
 // Utility to simulate backend auth header creation
 const createAuthHeader = (username: string, password: string): string => {
   // In a real scenario, we would use btoa for Base64 encoding
-  // For simulated API, we'll just return a placeholder
-  return `Basic ${window.btoa(`${username}:${password}`)}`;
+  const authHeader = `Basic ${window.btoa(`${username}:${password}`)}`;
+  logger.debug('Created auth header', { username });
+  return authHeader;
 };
 
 // Base API class
@@ -74,37 +76,45 @@ class MikrotikApi {
       'Authorization': createAuthHeader(config.username, config.password),
       'User-Agent': 'wireguard-manager/1.0'
     };
+    logger.info('MikrotikApi initialized', { baseUrl: this.baseUrl });
   }
 
   // Generic API methods
   private async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
     try {
-      // For simulation purposes - in a real app this would be a fetch call
-      console.log(`Making ${method} request to ${this.baseUrl}${endpoint}`);
-      console.log('Headers:', this.headers);
-      if (body) console.log('Body:', body);
+      logger.info(`Making ${method} request to ${this.baseUrl}${endpoint}`);
+      logger.info('Headers:', this.headers);
+      if (body) logger.info('Body:', body);
       
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Simulate responses based on endpoint
       if (endpoint.includes('/interface/wireguard') && method === 'GET') {
+        const mockData = this.getMockInterfaces();
+        logger.info('Mock interfaces response:', mockData);
         return this.getMockInterfaces() as unknown as T;
       }
       
       if (endpoint.includes('/interface/wireguard/peers') && method === 'GET') {
+        const mockData = this.getMockPeers();
+        logger.info('Mock peers response:', mockData);
         return this.getMockPeers() as unknown as T;
       }
       
       // For PUT/POST/PATCH requests, just return success
       if (['PUT', 'POST', 'PATCH'].includes(method)) {
-        return { success: true, ...body } as unknown as T;
+        const response = { success: true, ...body };
+        logger.info(`${method} response:`, response);
+        return response as unknown as T;
       }
       
       // Default response
-      return { success: true } as unknown as T;
+      const defaultResponse = { success: true };
+      logger.info('Default response:', defaultResponse);
+      return defaultResponse as unknown as T;
     } catch (error) {
-      console.error('API request failed:', error);
+      logger.error('API request failed:', error);
       toast.error('Falha na comunicação com o roteador');
       throw error;
     }
@@ -186,15 +196,20 @@ class MikrotikApi {
 export const generateKeys = async (): Promise<{privateKey: string, publicKey: string}> => {
   // In a real app, we would call a backend service for this
   // For simulation, we'll return mock keys
+  logger.info('Generating WireGuard keypair');
   await new Promise(resolve => setTimeout(resolve, 800));
   
-  return {
+  const keys = {
     privateKey: 'PRIVATE_KEY_' + Math.random().toString(36).substring(2, 10),
     publicKey: 'PUBLIC_KEY_' + Math.random().toString(36).substring(2, 10),
   };
+  
+  logger.info('Generated keypair', { publicKey: keys.publicKey });
+  return keys;
 };
 
 export const generateWireguardConfig = (config: WireguardConfig): string => {
+  logger.info('Generating WireGuard config', { config });
   return `[Interface]
 PrivateKey = ${config.privateKey}
 Address = ${config.address}
