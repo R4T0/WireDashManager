@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/sonner';
 import { Edit, Network, Plus, Trash } from 'lucide-react';
+import LogViewer from '@/components/debug/LogViewer';
 
 const Interfaces = () => {
   const { config, isConnected, testConnection } = useMikrotik();
@@ -159,7 +160,7 @@ const Interfaces = () => {
         </Button>
       </div>
 
-      <Card className="bg-wireguard-muted/50">
+      <Card className="bg-wireguard-muted/50 mb-6">
         <CardHeader>
           <CardTitle>Interfaces WireGuard</CardTitle>
         </CardHeader>
@@ -209,6 +210,8 @@ const Interfaces = () => {
           )}
         </CardContent>
       </Card>
+      
+      <LogViewer />
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="bg-wireguard-muted/80 backdrop-blur-sm border border-wireguard-muted">
