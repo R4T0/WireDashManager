@@ -15,6 +15,7 @@ export const useWireGuardDefaults = () => {
     port: '51820',
     dns: '1.1.1.1'
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDefaultsFromSupabase();
@@ -23,6 +24,8 @@ export const useWireGuardDefaults = () => {
   const loadDefaultsFromSupabase = async () => {
     try {
       logger.info("Loading WireGuard defaults from Supabase");
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('wireguard_defaults')
         .select('*')
@@ -47,8 +50,10 @@ export const useWireGuardDefaults = () => {
       }
     } catch (error) {
       logger.error('Failed to load defaults from Supabase:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return { defaults };
+  return { defaults, loading };
 };
