@@ -45,6 +45,7 @@ const MikrotikConnectionSettings = () => {
       useProxy
     });
     try {
+      // Fix: We need to ensure testConnection accepts the useProxy parameter
       await testConnection(useProxy);
     } finally {
       setTesting(false);
