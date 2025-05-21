@@ -31,9 +31,36 @@ const LogViewer: React.FC = () => {
     refreshLogs();
   };
   
+  // Helper function to safely serialize objects with circular references
+  const safeStringify = (obj: any): string => {
+    try {
+      // Create a new object with the same properties but without circular references
+      const getCircularReplacer = () => {
+        const seen = new WeakSet();
+        return (key: string, value: any) => {
+          if (typeof value === 'object' && value !== null) {
+            // Check if it's a DOM element, Window, or circular reference
+            if (value instanceof Element || value === window || value === document) {
+              return '[DOM Element]';
+            }
+            if (seen.has(value)) {
+              return '[Circular Reference]';
+            }
+            seen.add(value);
+          }
+          return value;
+        };
+      };
+      
+      return JSON.stringify(obj, getCircularReplacer(), 2);
+    } catch (error) {
+      return `[Error serializing object: ${error instanceof Error ? error.message : String(error)}]`;
+    }
+  };
+  
   const downloadLogs = () => {
     const logsText = logs.map(log => 
-      `[${log.timestamp.toISOString()}] [${log.level.toUpperCase()}] ${log.message} ${log.data ? JSON.stringify(log.data) : ''}`
+      `[${log.timestamp.toISOString()}] [${log.level.toUpperCase()}] ${log.message} ${log.data ? safeStringify(log.data) : ''}`
     ).join('\n');
     
     const blob = new Blob([logsText], { type: 'text/plain' });
@@ -102,7 +129,9 @@ const LogViewer: React.FC = () => {
                     <span className="ml-2">{log.message}</span>
                     {log.data && (
                       <pre className="ml-8 text-xs text-gray-400 whitespace-pre-wrap">
-                        {typeof log.data === 'object' ? JSON.stringify(log.data, null, 2) : log.data}
+                        {typeof log.data === 'object' 
+                          ? safeStringify(log.data)
+                          : log.data}
                       </pre>
                     )}
                   </div>
