@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Save, Plug } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import logger from '@/services/loggerService';
 
 const MikrotikConnectionSettings = () => {
   const { config, updateConfig, saveConfig, testConnection, isConnected } = useMikrotik();
@@ -15,6 +16,7 @@ const MikrotikConnectionSettings = () => {
 
   const handleSave = async () => {
     setSaving(true);
+    logger.info('Saving Mikrotik connection settings', { address: config.address, port: config.port });
     try {
       await saveConfig();
     } finally {
@@ -24,6 +26,7 @@ const MikrotikConnectionSettings = () => {
 
   const handleTest = async () => {
     setTesting(true);
+    logger.info('Testing Mikrotik connection', { address: config.address, port: config.port });
     try {
       await testConnection();
     } finally {

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { Network, Plus } from 'lucide-react';
-import LogViewer from '@/components/debug/LogViewer';
 import InterfaceList from '@/components/interfaces/InterfaceList';
 import InterfaceFormDialog from '@/components/interfaces/InterfaceFormDialog';
 import NotConnected from '@/components/interfaces/NotConnected';
@@ -158,8 +157,6 @@ const Interfaces = () => {
           />
         </CardContent>
       </Card>
-      
-      <LogViewer />
 
       <InterfaceFormDialog
         open={openDialog}

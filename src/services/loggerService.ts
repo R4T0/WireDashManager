@@ -3,12 +3,12 @@
  * Simple logging service for debugging
  */
 
-type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'request';
 
 class Logger {
   private static instance: Logger;
   private logs: {level: LogLevel, message: string, data?: any, timestamp: Date}[] = [];
-  private maxLogs: number = 100;
+  private maxLogs: number = 200;
   
   private constructor() {}
   
@@ -49,6 +49,10 @@ class Logger {
 
   public debug(message: string, data?: any): void {
     this.log('debug', message, data);
+  }
+  
+  public request(message: string, data?: any): void {
+    this.log('request', message, data);
   }
 
   public getLogs(): {level: LogLevel, message: string, data?: any, timestamp: Date}[] {

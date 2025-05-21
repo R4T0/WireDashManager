@@ -8,7 +8,7 @@ import logger from '@/services/loggerService';
 
 const LogViewer: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'info' | 'error' | 'warn' | 'debug'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'info' | 'error' | 'warn' | 'debug' | 'request'>('all');
   
   useEffect(() => {
     // Refresh logs every 2 seconds
@@ -58,6 +58,7 @@ const LogViewer: React.FC = () => {
       case 'warn': return 'text-yellow-500';
       case 'info': return 'text-blue-500';
       case 'debug': return 'text-gray-400';
+      case 'request': return 'text-green-500';
       default: return '';
     }
   };
@@ -88,6 +89,7 @@ const LogViewer: React.FC = () => {
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="error">Errors</TabsTrigger>
             <TabsTrigger value="warn">Warnings</TabsTrigger>
+            <TabsTrigger value="request">Requests</TabsTrigger>
             <TabsTrigger value="debug">Debug</TabsTrigger>
           </TabsList>
           <TabsContent value={activeTab} className="mt-0">

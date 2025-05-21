@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
+import logger from '@/services/loggerService';
 
 interface MikrotikConfig {
   address: string;
@@ -146,26 +147,52 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
       
       const authHeader = 'Basic ' + btoa(`${config.username}:${config.password}`);
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        }
+      // Log the request attempt
+      logger.request(`Testing connection to Mikrotik router`, { 
+        url, 
+        method: 'GET', 
+        useHttps: config.useHttps 
       });
       
-      if (response.status === 200) {
-        setIsConnected(true);
-        toast.success('Conexão estabelecida com sucesso');
-        return true;
-      } else {
-        setIsConnected(false);
-        toast.error(`Falha na conexão: Status ${response.status}`);
-        return false;
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+            'Accept': '*/*'
+          }
+        });
+        
+        if (response.status === 200) {
+          setIsConnected(true);
+          const responseData = await response.json();
+          logger.request(`Connection test successful`, { 
+            status: response.status, 
+            data: responseData 
+          });
+          toast.success('Conexão estabelecida com sucesso');
+          return true;
+        } else {
+          setIsConnected(false);
+          logger.request(`Connection test failed`, { 
+            status: response.status, 
+            statusText: response.statusText 
+          });
+          toast.error(`Falha na conexão: Status ${response.status}`);
+          return false;
+        }
+      } catch (error) {
+        logger.request(`Connection test error`, { 
+          error: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
       }
     } catch (error) {
       console.error('Connection test failed:', error);
+      logger.error('Connection test failed with exception', { 
+        error: error instanceof Error ? error.message : String(error)
+      });
       setIsConnected(false);
       toast.error('Falha ao conectar com o roteador Mikrotik');
       return false;
