@@ -14,7 +14,7 @@ class MikrotikApi {
   constructor(config: MikrotikConfig) {
     this.baseUrl = `${config.useHttps ? 'https' : 'http'}://${config.address}:${config.port}/rest`;
     this.headers = {
-      'Content-Type': 'application/json',
+      'Accept': '*/*',
       'Authorization': createAuthHeader(config.username, config.password),
       'User-Agent': 'wireguard-manager/1.0'
     };
@@ -25,8 +25,10 @@ class MikrotikApi {
   private async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
     try {
       logger.info(`Making ${method} request to ${this.baseUrl}${endpoint}`);
-      logger.info('Headers:', this.headers);
-      if (body) logger.info('Body:', body);
+      logger.request(`API Request: ${method} ${this.baseUrl}${endpoint}`, {
+        headers: { ...this.headers, 'Authorization': '[REDACTED]' },
+        body: body ? JSON.stringify(body) : undefined
+      });
       
       // For real API calls, we would use fetch like this:
       // const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -47,26 +49,26 @@ class MikrotikApi {
       // Simulate responses based on endpoint
       if (endpoint.includes('/interface/wireguard') && method === 'GET') {
         const mockData = getMockInterfaces();
-        logger.info('Mock interfaces response:', mockData);
+        logger.request('Mock interfaces response:', mockData);
         return mockData as unknown as T;
       }
       
       if (endpoint.includes('/interface/wireguard/peers') && method === 'GET') {
         const mockData = getMockPeers();
-        logger.info('Mock peers response:', mockData);
+        logger.request('Mock peers response:', mockData);
         return mockData as unknown as T;
       }
       
       // For PUT/POST/PATCH requests, just return success
       if (['PUT', 'POST', 'PATCH'].includes(method)) {
         const response = { success: true, ...body };
-        logger.info(`${method} response:`, response);
+        logger.request(`${method} response:`, response);
         return response as unknown as T;
       }
       
       // Default response
       const defaultResponse = { success: true };
-      logger.info('Default response:', defaultResponse);
+      logger.request('Default response:', defaultResponse);
       return defaultResponse as unknown as T;
     } catch (error) {
       logger.error('API request failed:', error);

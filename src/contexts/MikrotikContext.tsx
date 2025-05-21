@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,8 +158,8 @@ export const MikrotikProvider: React.FC<{ children: ReactNode }> = ({ children }
           method: 'GET',
           headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json',
-            'Accept': '*/*'
+            'Accept': '*/*',
+            'User-Agent': 'wireguard-manager/1.0'
           }
         });
         

@@ -5,9 +5,9 @@ import logger from '../loggerService';
  * Utility functions for Mikrotik API
  */
 
-// Utility to simulate backend auth header creation
+// Utility to create authentication header for API requests
 export const createAuthHeader = (username: string, password: string): string => {
-  // In a real scenario, we would use btoa for Base64 encoding
+  // Format the auth header as shown in the image: Basic YWRtaW46TWljcm8uR2VyLjIwMDA=
   const authHeader = `Basic ${window.btoa(`${username}:${password}`)}`;
   logger.debug('Created auth header', { username });
   return authHeader;
