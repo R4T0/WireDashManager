@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useMikrotik } from '@/contexts/MikrotikContext';
+import { useMikrotik } from '@/contexts/mikrotik';
 import { useQRCode } from '@/hooks/use-qrcode';
 import PeerSearch from '@/components/qrcode/PeerSearch';
 import QRCodeDisplay from '@/components/qrcode/QRCodeDisplay';

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useMikrotik } from '@/contexts/MikrotikContext';
+import { useMikrotik } from '@/contexts/mikrotik';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Network, Users, Activity, CheckCircle } from 'lucide-react';
 

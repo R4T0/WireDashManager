@@ -13,7 +13,7 @@ import GenerateConfig from "./pages/GenerateConfig";
 import QRCode from "./pages/QRCode";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import { MikrotikProvider } from "./contexts/MikrotikContext";
+import { MikrotikProvider } from "./contexts/mikrotik";
 
 const queryClient = new QueryClient();
 

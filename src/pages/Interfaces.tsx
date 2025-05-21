@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useMikrotik } from '@/contexts/MikrotikContext';
+import { useMikrotik } from '@/contexts/mikrotik';
 import MikrotikApi, { WireguardInterface } from '@/services/mikrotikService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
