@@ -3,11 +3,15 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
 import MikrotikApi, { WireguardPeer } from '@/services/mikrotikService';
 import { MikrotikConfig } from '@/services/mikrotik/types';
+import { generateKeys } from '@/services/mikrotik/utils';
 
 export interface PeerFormData {
   name: string;
   interface: string;
   allowedAddress: string;
+  endpoint: string;
+  endpointPort: string;
+  publicKey?: string;
   disabled: boolean;
 }
 
@@ -24,6 +28,8 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     name: '',
     interface: '',
     allowedAddress: '',
+    endpoint: '',
+    endpointPort: '51820',
     disabled: false
   });
 
@@ -60,6 +66,9 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
       name: peer.name,
       interface: peer.interface,
       allowedAddress: peer.allowedAddress,
+      endpoint: peer.endpoint || '',
+      endpointPort: peer.endpointPort || '51820',
+      publicKey: peer.publicKey,
       disabled: typeof peer.disabled === 'string' ? peer.disabled === 'true' : Boolean(peer.disabled)
     });
     setIsEditing(true);
@@ -72,6 +81,8 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
       name: '',
       interface: interfaces.length > 0 ? interfaces[0] : '',
       allowedAddress: '10.0.0.0/32',
+      endpoint: '',
+      endpointPort: '51820',
       disabled: false
     });
     setIsEditing(false);
@@ -85,7 +96,6 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     
     try {
       const api = new MikrotikApi(config);
-      // Usar o endpoint correto para exclusão
       await api.deletePeer(id);
       setPeers(prev => prev.filter(peer => peer.id !== id));
       toast.success('Peer excluído com sucesso');
@@ -103,15 +113,50 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     try {
       const api = new MikrotikApi(config);
       
+      // Preparar os dados para API no formato correto
+      const peerData = {
+        name: formData.name,
+        interface: formData.interface,
+        "allowed-address": formData.allowedAddress,
+        "endpoint-address": formData.endpoint,
+        "endpoint-port": formData.endpointPort,
+        disabled: formData.disabled
+      };
+
       if (isEditing && selectedPeer) {
-        await api.updatePeer(selectedPeer.id, formData);
+        await api.updatePeer(selectedPeer.id, peerData);
         setPeers(prev => prev.map(peer => 
-          peer.id === selectedPeer.id ? { ...peer, ...formData } : peer
+          peer.id === selectedPeer.id ? { 
+            ...peer, 
+            name: formData.name,
+            interface: formData.interface,
+            allowedAddress: formData.allowedAddress,
+            endpoint: formData.endpoint,
+            endpointPort: formData.endpointPort,
+            disabled: formData.disabled
+          } : peer
         ));
         toast.success('Peer atualizado com sucesso');
       } else {
-        const newPeer = await api.createPeer(formData);
-        setPeers(prev => [...prev, newPeer as WireguardPeer]);
+        // Para novos peers, gerar uma chave pública
+        const keys = await generateKeys();
+        const newPeerData = {
+          ...peerData,
+          "public-key": keys.publicKey
+        };
+        
+        const newPeer = await api.createPeer(newPeerData);
+        setPeers(prev => [...prev, {
+          ...newPeer,
+          id: newPeer.id,
+          name: formData.name,
+          interface: formData.interface,
+          allowedAddress: formData.allowedAddress,
+          endpoint: formData.endpoint,
+          endpointPort: formData.endpointPort,
+          publicKey: keys.publicKey,
+          disabled: formData.disabled
+        } as WireguardPeer]);
         toast.success('Peer criado com sucesso');
       }
       

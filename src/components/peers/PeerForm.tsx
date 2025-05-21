@@ -1,16 +1,20 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
 
 interface PeerFormData {
   name: string;
   interface: string;
   allowedAddress: string;
+  endpoint: string;
+  endpointPort: string;
+  publicKey?: string;
   disabled: boolean;
 }
 
@@ -33,6 +37,16 @@ const PeerForm = ({
   onChange,
   onSubmit,
 }: PeerFormProps) => {
+  const { defaults, loading } = useWireGuardDefaults();
+
+  // Preencher endpoint com o valor padrão quando não estiver em modo de edição
+  useEffect(() => {
+    if (!isEditing && defaults.endpoint && !formData.endpoint) {
+      onChange('endpoint', defaults.endpoint);
+      onChange('endpointPort', defaults.port || '51820');
+    }
+  }, [defaults, isEditing, formData.endpoint, onChange]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-wireguard-muted/80 backdrop-blur-sm border border-wireguard-muted">
@@ -90,6 +104,40 @@ const PeerForm = ({
               className="col-span-3 form-input"
             />
           </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="endpoint" className="text-right">
+              Endpoint
+            </Label>
+            <Input
+              id="endpoint"
+              value={formData.endpoint}
+              onChange={(e) => onChange('endpoint', e.target.value)}
+              placeholder={loading ? "Carregando..." : ""}
+              className="col-span-2 form-input"
+            />
+            <Input
+              id="endpointPort"
+              value={formData.endpointPort}
+              onChange={(e) => onChange('endpointPort', e.target.value)}
+              placeholder="51820"
+              className="form-input"
+            />
+          </div>
+
+          {isEditing && formData.publicKey && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="publicKey" className="text-right">
+                Chave Pública
+              </Label>
+              <Input
+                id="publicKey"
+                value={formData.publicKey}
+                readOnly
+                className="col-span-3 form-input bg-wireguard-muted/50"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="disabled" className="text-right">

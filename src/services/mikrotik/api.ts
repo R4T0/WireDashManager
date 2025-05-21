@@ -1,3 +1,4 @@
+
 import { toast } from '@/components/ui/sonner';
 import logger from '../loggerService';
 import { createAuthHeader, getMockInterfaces, getMockPeers } from './utils';
@@ -139,21 +140,57 @@ class MikrotikApi {
   }
 
   public async deleteInterface(id: string): Promise<void> {
-    // Use the specific ID in the endpoint to delete the interface
     return this.makeRequest<void>(`/interface/wireguard/${id}`, 'DELETE');
   }
 
   // WireGuard peer methods
   public async getPeers(): Promise<WireguardPeer[]> {
-    return this.makeRequest<WireguardPeer[]>('/interface/wireguard/peers', 'GET');
+    return this.makeRequest<WireguardPeer[]>('/interface/wireguard/peers', 'GET')
+      .then(peers => this.mapPeerResponseToPeerObjects(peers));
   }
 
-  public async createPeer(peer: any): Promise<WireguardPeer> {
-    return this.makeRequest<WireguardPeer>('/interface/wireguard/peers', 'PUT', peer);
+  // Mapeia as respostas da API para o formato utilizado pela aplicação
+  private mapPeerResponseToPeerObjects(peers: any[]): WireguardPeer[] {
+    return peers.map(peer => ({
+      id: peer['.id'],
+      name: peer.name,
+      interface: peer.interface,
+      allowedAddress: peer['allowed-address'],
+      endpoint: peer['endpoint-address'],
+      endpointPort: peer['endpoint-port'],
+      publicKey: peer['public-key'],
+      disabled: peer.disabled,
+    }));
   }
 
-  public async updatePeer(id: string, peer: any): Promise<WireguardPeer> {
-    return this.makeRequest<WireguardPeer>(`/interface/wireguard/peers/${id}`, 'PATCH', peer);
+  public async createPeer(peerData: any): Promise<WireguardPeer> {
+    return this.makeRequest<any>('/interface/wireguard/peers', 'PUT', peerData)
+      .then(response => {
+        const id = response['.id'] || String(Date.now());
+        return {
+          id,
+          name: peerData.name,
+          interface: peerData.interface,
+          allowedAddress: peerData['allowed-address'],
+          endpoint: peerData['endpoint-address'],
+          endpointPort: peerData['endpoint-port'],
+          publicKey: peerData['public-key'],
+          disabled: peerData.disabled,
+        };
+      });
+  }
+
+  public async updatePeer(id: string, peerData: any): Promise<WireguardPeer> {
+    return this.makeRequest<any>(`/interface/wireguard/peers/${id}`, 'PUT', peerData)
+      .then(() => ({
+        id,
+        name: peerData.name,
+        interface: peerData.interface,
+        allowedAddress: peerData['allowed-address'],
+        endpoint: peerData['endpoint-address'],
+        endpointPort: peerData['endpoint-port'],
+        disabled: peerData.disabled,
+      } as WireguardPeer));
   }
 
   public async deletePeer(id: string): Promise<void> {
