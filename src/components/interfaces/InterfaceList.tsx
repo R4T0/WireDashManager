@@ -32,12 +32,17 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
 
   // Helper function to get status text and style based on the running parameter
   const getStatusInfo = (iface: WireguardInterface) => {
-    if (iface.disabled === true || iface.disabled === 'true') {
+    // Check if disabled is true by converting string 'true' to boolean if needed
+    const isDisabled = iface.disabled === true || iface.disabled === "true";
+    // Check if running is true by converting string 'true' to boolean if needed
+    const isRunning = iface.running === true || iface.running === "true";
+    
+    if (isDisabled) {
       return {
         text: 'Desativado',
         className: 'bg-red-900/30 text-red-400'
       };
-    } else if (iface.running === true || iface.running === 'true') {
+    } else if (isRunning) {
       return {
         text: 'Rodando',
         className: 'bg-green-900/30 text-green-400'
