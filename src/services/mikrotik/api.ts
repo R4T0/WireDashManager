@@ -26,8 +26,8 @@ class MikrotikApi {
     logger.info('MikrotikApi initialized', { baseUrl: this.baseUrl });
   }
 
-  // Generic API methods
-  private async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
+  // Generic API methods - private implementation
+  private async makeRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       logger.info(`Making ${method} request to ${url}`);
@@ -54,8 +54,8 @@ class MikrotikApi {
     }
   }
 
-  // Public version of request for testing purposes
-  public async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
+  // Public method for testing purposes
+  public async testRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     if (this.useProxy) {
       return this.proxyRequest<T>(url, method, this.headers, body);
@@ -122,36 +122,36 @@ class MikrotikApi {
 
   // WireGuard interface methods
   public async getInterfaces(): Promise<WireguardInterface[]> {
-    return this.request<WireguardInterface[]>('/interface/wireguard', 'GET');
+    return this.makeRequest<WireguardInterface[]>('/interface/wireguard', 'GET');
   }
 
   public async createInterface(interfaceData: any): Promise<WireguardInterface> {
-    return this.request<WireguardInterface>('/interface/wireguard', 'PUT', interfaceData);
+    return this.makeRequest<WireguardInterface>('/interface/wireguard', 'PUT', interfaceData);
   }
 
   public async updateInterface(id: string, interfaceData: any): Promise<WireguardInterface> {
-    return this.request<WireguardInterface>(`/interface/wireguard/${id}`, 'PATCH', interfaceData);
+    return this.makeRequest<WireguardInterface>(`/interface/wireguard/${id}`, 'PATCH', interfaceData);
   }
 
   public async deleteInterface(id: string): Promise<void> {
-    return this.request<void>(`/interface/wireguard/${id}`, 'DELETE');
+    return this.makeRequest<void>(`/interface/wireguard/${id}`, 'DELETE');
   }
 
   // WireGuard peer methods
   public async getPeers(): Promise<WireguardPeer[]> {
-    return this.request<WireguardPeer[]>('/interface/wireguard/peers', 'GET');
+    return this.makeRequest<WireguardPeer[]>('/interface/wireguard/peers', 'GET');
   }
 
   public async createPeer(peer: any): Promise<WireguardPeer> {
-    return this.request<WireguardPeer>('/interface/wireguard/peers', 'PUT', peer);
+    return this.makeRequest<WireguardPeer>('/interface/wireguard/peers', 'PUT', peer);
   }
 
   public async updatePeer(id: string, peer: any): Promise<WireguardPeer> {
-    return this.request<WireguardPeer>(`/interface/wireguard/peers/${id}`, 'PATCH', peer);
+    return this.makeRequest<WireguardPeer>(`/interface/wireguard/peers/${id}`, 'PATCH', peer);
   }
 
   public async deletePeer(id: string): Promise<void> {
-    return this.request<void>(`/interface/wireguard/peers/${id}`, 'DELETE');
+    return this.makeRequest<void>(`/interface/wireguard/peers/${id}`, 'DELETE');
   }
 
   // Toggle proxy usage

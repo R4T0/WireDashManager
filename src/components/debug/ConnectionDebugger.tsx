@@ -33,7 +33,7 @@ const ConnectionDebugger = () => {
       // Log the test we're about to run
       logger.debug('Running connection test', { url, useProxy });
       
-      const response = await api.request('/system/resource', 'GET');
+      const response = await api.testRequest('/system/resource', 'GET');
       
       setTestResults({
         success: true,
