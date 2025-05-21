@@ -85,6 +85,7 @@ const Interfaces = () => {
     
     try {
       const api = new MikrotikApi(config);
+      // Use the correct endpoint with the ID parameter
       await api.deleteInterface(id);
       toast.success('Interface excluída com sucesso');
       setInterfaces(prev => prev.filter(iface => iface.id !== id));
@@ -113,7 +114,7 @@ const Interfaces = () => {
         
         toast.success('Interface atualizada com sucesso');
       } else {
-        // Create new interface - using the formatted data according to image
+        // Create new interface - using the formatted data
         const formattedData = formatInterfaceData(formData);
         const newInterface = await api.createInterface(formattedData);
         
