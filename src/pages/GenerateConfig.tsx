@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useMikrotik } from '@/contexts/MikrotikContext';
+import { useMikrotik } from '@/contexts/mikrotik';
 import MikrotikApi, { generateKeys, generateWireguardConfig, NewPeerConfig } from '@/services/mikrotikService';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
