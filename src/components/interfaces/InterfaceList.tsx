@@ -32,10 +32,15 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
 
   // Helper function to get status text and style based on the running parameter
   const getStatusInfo = (iface: WireguardInterface) => {
-    // Check if disabled is true by converting string 'true' to boolean if needed
-    const isDisabled = iface.disabled === true || iface.disabled === "true";
-    // Check if running is true by converting string 'true' to boolean if needed
-    const isRunning = iface.running === true || iface.running === "true";
+    // Check if disabled is true by converting to boolean properly
+    const isDisabled = typeof iface.disabled === 'string' 
+      ? iface.disabled === "true" 
+      : Boolean(iface.disabled);
+    
+    // Check if running is true by converting to boolean properly
+    const isRunning = typeof iface.running === 'string'
+      ? iface.running === "true"
+      : Boolean(iface.running);
     
     if (isDisabled) {
       return {
