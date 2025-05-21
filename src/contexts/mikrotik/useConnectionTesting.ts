@@ -2,6 +2,7 @@
 import { toast } from '@/components/ui/sonner';
 import logger from '@/services/loggerService';
 import { MikrotikConfig } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useConnectionTesting = (
   config: MikrotikConfig, 
@@ -15,49 +16,59 @@ export const useConnectionTesting = (
         return false;
       }
       
-      // Make an actual API call to the system resource endpoint
+      // Construir a URL do router Mikrotik
       const protocol = config.useHttps ? 'https' : 'http';
       const url = `${protocol}://${config.address}${config.port ? `:${config.port}` : ''}/rest/system/resource`;
       
       const authHeader = 'Basic ' + btoa(`${config.username}:${config.password}`);
       
       // Log the request attempt
-      logger.request(`Testing connection to Mikrotik router`, { 
+      logger.request(`Testing connection to Mikrotik router via proxy`, { 
         url, 
         method: 'GET', 
         useHttps: config.useHttps 
       });
       
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Authorization': authHeader,
-            'Accept': '*/*',
-            'User-Agent': 'wireguard-manager/1.0'
+        // Usar a edge function como proxy para evitar problemas de CORS e Mixed Content
+        const { data, error } = await supabase.functions.invoke('mikrotik-proxy', {
+          body: {
+            url,
+            method: 'GET',
+            headers: {
+              'Authorization': authHeader,
+              'Accept': '*/*',
+              'User-Agent': 'wireguard-manager/1.0'
+            }
           }
         });
+
+        if (error) {
+          logger.request(`Proxy request failed`, { error });
+          setIsConnected(false);
+          toast.error(`Falha na conexão: ${error.message}`);
+          return false;
+        }
         
-        if (response.status === 200) {
+        if (data && data.status === 200) {
           setIsConnected(true);
-          const responseData = await response.json();
-          logger.request(`Connection test successful`, { 
-            status: response.status, 
-            data: responseData 
+          logger.request(`Connection test successful via proxy`, { 
+            status: data.status, 
+            data: data.body 
           });
           toast.success('Conexão estabelecida com sucesso');
           return true;
         } else {
           setIsConnected(false);
-          logger.request(`Connection test failed`, { 
-            status: response.status, 
-            statusText: response.statusText 
+          logger.request(`Connection test failed via proxy`, { 
+            status: data?.status, 
+            statusText: data?.statusText 
           });
-          toast.error(`Falha na conexão: Status ${response.status}`);
+          toast.error(`Falha na conexão: Status ${data?.status || 'desconhecido'}`);
           return false;
         }
       } catch (error) {
-        logger.request(`Connection test error`, { 
+        logger.request(`Connection test error via proxy`, { 
           error: error instanceof Error ? error.message : String(error)
         });
         throw error;
