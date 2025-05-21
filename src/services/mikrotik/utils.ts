@@ -1,4 +1,3 @@
-
 import logger from '../loggerService';
 
 /**
@@ -7,10 +6,11 @@ import logger from '../loggerService';
 
 // Utility to create authentication header for API requests
 export const createAuthHeader = (username: string, password: string): string => {
-  // Format the auth header as shown in the image: Basic YWRtaW46TWljcm8uR2VyLjIwMDA=
-  const authHeader = `Basic ${window.btoa(`${username}:${password}`)}`;
-  logger.debug('Created auth header', { username });
-  return authHeader;
+  logger.info('DEBUG: Created auth header', { username });
+  
+  // Use the btoa function to create a Base64 encoded string for Basic Auth
+  // Format: "Basic base64(username:password)"
+  return 'Basic ' + btoa(`${username}:${password}`);
 };
 
 // Generate WireGuard keypair

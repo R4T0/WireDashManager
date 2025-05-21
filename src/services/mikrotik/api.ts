@@ -27,44 +27,8 @@ class MikrotikApi {
   }
 
   // Generic API methods - private implementation
-  private async makeRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-    try {
-      const url = `${this.baseUrl}${endpoint}`;
-      logger.info(`Making ${method} request to ${url}`);
-      
-      if (this.useProxy) {
-        return this.proxyRequest<T>(url, method, this.headers, body);
-      } else {
-        return this.directRequest<T>(url, method, body);
-      }
-    } catch (error) {
-      logger.error('API request failed:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof TypeError && error.message.includes('NetworkError') || 
-          error instanceof DOMException && error.message.includes('CORS')) {
-        toast.error('Erro de CORS: O servidor não permite requisições do navegador');
-      } else if (error instanceof TypeError && error.message.includes('Mixed Content')) {
-        toast.error('Erro de conteúdo misto: Tentando acessar HTTP a partir de HTTPS');
-      } else {
-        toast.error('Falha na comunicação com o roteador');
-      }
-      
-      throw error;
-    }
-  }
-
-  // Public method for testing purposes
-  public async testRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
+  private async makeRequestViaProxy<T>(endpoint: string, method: string, body?: any): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    if (this.useProxy) {
-      return this.proxyRequest<T>(url, method, this.headers, body);
-    } else {
-      return this.directRequest<T>(url, method, body);
-    }
-  }
-
-  private async proxyRequest<T>(url: string, method: string, headers: Record<string, string>, body?: any): Promise<T> {
     logger.info(`Using proxy for request to ${url}`);
     
     try {
@@ -72,7 +36,10 @@ class MikrotikApi {
         body: {
           url,
           method,
-          headers: { ...headers, 'Authorization': '[REDACTED_FOR_LOGS]' },
+          headers: { 
+            ...this.headers, 
+            'Authorization': createAuthHeader(this.config.username, this.config.password) 
+          },
           body
         }
       });
@@ -96,8 +63,9 @@ class MikrotikApi {
     }
   }
 
-  private async directRequest<T>(url: string, method: string, body?: any): Promise<T> {
-    logger.request(`API Request: ${method} ${url}`, {
+  private async makeRequestDirect<T>(endpoint: string, method: string, body?: any): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    logger.request(`API Direct Request: ${method} ${url}`, {
       headers: { ...this.headers, 'Authorization': '[REDACTED]' },
       body: body ? JSON.stringify(body) : undefined
     });
@@ -118,6 +86,44 @@ class MikrotikApi {
     const data = await response.json();
     logger.request(`API response:`, data);
     return data as T;
+  }
+
+  // Public method to make requests with proper error handling
+  public async makeRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
+    try {
+      const url = `${this.baseUrl}${endpoint}`;
+      logger.info(`Making ${method} request to ${url}`);
+      
+      if (this.useProxy) {
+        return this.makeRequestViaProxy<T>(endpoint, method, body);
+      } else {
+        return this.makeRequestDirect<T>(endpoint, method, body);
+      }
+    } catch (error) {
+      logger.error('API request failed:', error);
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('NetworkError') || 
+          error instanceof DOMException && error.message.includes('CORS')) {
+        toast.error('Erro de CORS: O servidor não permite requisições do navegador');
+      } else if (error instanceof TypeError && error.message.includes('Mixed Content')) {
+        toast.error('Erro de conteúdo misto: Tentando acessar HTTP a partir de HTTPS');
+      } else {
+        toast.error('Falha na comunicação com o roteador');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Public method for testing purposes
+  public async testRequest(endpoint: string, method: string, body?: any): Promise<any> {
+    const url = `${this.baseUrl}${endpoint}`;
+    if (this.useProxy) {
+      return this.makeRequestViaProxy(endpoint, method, body);
+    } else {
+      return this.makeRequestDirect(endpoint, method, body);
+    }
   }
 
   // WireGuard interface methods
