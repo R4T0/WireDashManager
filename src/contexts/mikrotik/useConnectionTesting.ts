@@ -31,9 +31,12 @@ export const useConnectionTesting = (
       try {
         const response = await fetch(url, {
           method: 'GET',
+          mode: 'cors',
+          credentials: 'omit',
           headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
           }
         });
         
@@ -55,9 +58,20 @@ export const useConnectionTesting = (
           return false;
         }
       } catch (error) {
-        logger.request(`Connection test error`, { 
-          error: error instanceof Error ? error.message : String(error)
-        });
+        // Check if the error is related to CORS
+        if (error instanceof TypeError && error.message.includes('NetworkError') || 
+            error instanceof DOMException && error.message.includes('CORS')) {
+          logger.request(`CORS error detected`, { 
+            error: error instanceof Error ? error.message : String(error)
+          });
+          
+          toast.error('Erro de CORS: O servidor não permite requisições do navegador. Verifique a configuração CORS no router Mikrotik.');
+          console.error('CORS error:', error);
+        } else {
+          logger.request(`Connection test error`, { 
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
         throw error;
       }
     } catch (error) {
@@ -66,7 +80,25 @@ export const useConnectionTesting = (
         error: error instanceof Error ? error.message : String(error)
       });
       setIsConnected(false);
-      toast.error('Falha ao conectar com o roteador Mikrotik');
+      
+      // Provide more specific error message based on what failed
+      if (error instanceof TypeError && error.message.includes('NetworkError')) {
+        toast.error('Erro de CORS: Verifique se o servidor permite requisições externas');
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        toast.error('Não foi possível conectar ao roteador. Verifique o endereço e a porta');
+      } else if (error instanceof TypeError && error.message.includes('Mixed Content')) {
+        toast.error('Erro de conteúdo misto: Tentando acessar HTTP a partir de HTTPS');
+      } else {
+        toast.error('Falha ao conectar com o roteador Mikrotik');
+      }
+      
+      // Add a debug tab to the settings page to show the actual error
+      logger.debug('Connection error details', { 
+        url: `${config.useHttps ? 'https' : 'http'}://${config.address}${config.port ? `:${config.port}` : ''}/rest/system/resource`,
+        error: error instanceof Error ? error.message : String(error),
+        browserInfo: navigator.userAgent
+      });
+      
       return false;
     }
   };

@@ -14,10 +14,11 @@ class MikrotikApi {
 
   constructor(config: MikrotikConfig) {
     this.config = config;
-    this.baseUrl = `${config.useHttps ? 'https' : 'http'}://${config.address}:${config.port}/rest`;
+    this.baseUrl = `${config.useHttps ? 'https' : 'http'}://${config.address}${config.port ? `:${config.port}` : ''}/rest`;
     this.headers = {
       'Accept': '*/*',
       'Authorization': createAuthHeader(config.username, config.password),
+      'Content-Type': 'application/json',
       'User-Agent': 'wireguard-manager/1.0'
     };
     logger.info('MikrotikApi initialized', { baseUrl: this.baseUrl });
@@ -35,6 +36,8 @@ class MikrotikApi {
       
       const response = await fetch(url, {
         method,
+        mode: 'cors',
+        credentials: 'omit',
         headers: this.headers,
         body: method !== 'GET' ? JSON.stringify(body) : undefined
       });
@@ -49,7 +52,17 @@ class MikrotikApi {
       return data as T;
     } catch (error) {
       logger.error('API request failed:', error);
-      toast.error('Falha na comunicação com o roteador');
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('NetworkError') || 
+          error instanceof DOMException && error.message.includes('CORS')) {
+        toast.error('Erro de CORS: O servidor não permite requisições do navegador');
+      } else if (error instanceof TypeError && error.message.includes('Mixed Content')) {
+        toast.error('Erro de conteúdo misto: Tentando acessar HTTP a partir de HTTPS');
+      } else {
+        toast.error('Falha na comunicação com o roteador');
+      }
+      
       throw error;
     }
   }
