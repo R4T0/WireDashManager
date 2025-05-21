@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMikrotik } from '@/contexts/mikrotik';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,19 @@ const MikrotikConnectionSettings = () => {
   const { config, updateConfig, saveConfig, testConnection, isConnected } = useMikrotik();
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [useProxy, setUseProxy] = useState<boolean>(true);
+
+  // Store proxy preference in localStorage
+  useEffect(() => {
+    const storedPreference = localStorage.getItem('mikrotikUseProxy');
+    if (storedPreference !== null) {
+      setUseProxy(storedPreference === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('mikrotikUseProxy', useProxy.toString());
+  }, [useProxy]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -26,9 +39,13 @@ const MikrotikConnectionSettings = () => {
 
   const handleTest = async () => {
     setTesting(true);
-    logger.info('Testing Mikrotik connection', { address: config.address, port: config.port });
+    logger.info('Testing Mikrotik connection', { 
+      address: config.address, 
+      port: config.port,
+      useProxy
+    });
     try {
-      await testConnection();
+      await testConnection(useProxy);
     } finally {
       setTesting(false);
     }
@@ -114,6 +131,17 @@ const MikrotikConnectionSettings = () => {
             />
             <label htmlFor="useHttps" className="form-label m-0">
               Usar HTTPS para conexões API
+            </label>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={useProxy}
+              onCheckedChange={setUseProxy}
+              id="useProxy"
+            />
+            <label htmlFor="useProxy" className="form-label m-0">
+              Usar proxy backend para contornar problemas de CORS (recomendado)
             </label>
           </div>
           

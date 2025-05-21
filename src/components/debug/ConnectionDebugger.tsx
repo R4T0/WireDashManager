@@ -5,15 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/sonner';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 import logger from '@/services/loggerService';
+import MikrotikApi from '@/services/mikrotik/api';
 
 const ConnectionDebugger = () => {
   const { config } = useMikrotik();
   const [testResults, setTestResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [useProxy, setUseProxy] = useState<boolean>(true);
   
   const runCorsTest = async () => {
     setLoading(true);
@@ -21,35 +24,30 @@ const ConnectionDebugger = () => {
       const protocol = config.useHttps ? 'https' : 'http';
       const url = `${protocol}://${config.address}${config.port ? `:${config.port}` : ''}/rest/system/resource`;
       
+      // Create a Mikrotik API instance for testing
+      const api = new MikrotikApi(config);
+      
+      // Set proxy mode based on user choice
+      api.setUseProxy(useProxy);
+      
       // Log the test we're about to run
-      logger.debug('Running CORS test', { url });
+      logger.debug('Running connection test', { url, useProxy });
       
-      // Simple fetch to test CORS
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${config.username}:${config.password}`),
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      const data = await response.json();
+      const response = await api.request('/system/resource', 'GET');
       
       setTestResults({
         success: true,
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        data
+        useProxy,
+        data: response
       });
       
-      toast.success('Teste de CORS bem-sucedido');
+      toast.success(useProxy ? 'Teste via proxy bem-sucedido' : 'Teste direto bem-sucedido');
     } catch (error) {
-      console.error('CORS test failed:', error);
+      console.error('Connection test failed:', error);
       
       setTestResults({
         success: false,
+        useProxy,
         error: error instanceof Error ? {
           name: error.name,
           message: error.message,
@@ -62,7 +60,7 @@ const ConnectionDebugger = () => {
         }
       });
       
-      toast.error('Teste de CORS falhou');
+      toast.error(useProxy ? 'Teste via proxy falhou' : 'Teste direto falhou');
     } finally {
       setLoading(false);
     }
@@ -131,8 +129,19 @@ const ConnectionDebugger = () => {
           <Separator />
           
           <div className="flex flex-col gap-4">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="proxy-mode"
+                checked={useProxy}
+                onCheckedChange={setUseProxy}
+              />
+              <label htmlFor="proxy-mode" className="cursor-pointer">
+                Usar proxy para requisições (recomendado)
+              </label>
+            </div>
+            
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Teste de CORS</h3>
+              <h3 className="text-lg font-medium">Teste de Conexão</h3>
               <Button 
                 onClick={runCorsTest} 
                 disabled={loading}
@@ -146,7 +155,7 @@ const ConnectionDebugger = () => {
                 ) : (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Executar Teste CORS
+                    Executar Teste de Conexão
                   </>
                 )}
               </Button>
@@ -155,7 +164,7 @@ const ConnectionDebugger = () => {
             {testResults && (
               <div className="mt-4 bg-muted/50 p-4 rounded-md">
                 <div className="flex items-center gap-2 mb-2">
-                  <h4 className="font-medium">Resultado:</h4>
+                  <h4 className="font-medium">Resultado ({testResults.useProxy ? 'via Proxy' : 'Direto'}):</h4>
                   {testResults.success ? (
                     <span className="flex items-center text-green-600">
                       <Check className="h-4 w-4 mr-1" />
@@ -172,14 +181,8 @@ const ConnectionDebugger = () => {
                 {testResults.success ? (
                   <div className="grid gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      <span className="font-mono">{testResults.status} {testResults.statusText}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Headers:</span>
-                      <span className="font-mono max-w-[400px] truncate">
-                        {JSON.stringify(testResults.headers)}
-                      </span>
+                      <span className="text-muted-foreground">Método:</span>
+                      <span className="font-mono">{testResults.useProxy ? 'Via proxy Supabase' : 'Requisição direta'}</span>
                     </div>
                     <details>
                       <summary className="cursor-pointer text-sm font-medium">Ver dados da resposta</summary>
@@ -190,6 +193,10 @@ const ConnectionDebugger = () => {
                   </div>
                 ) : (
                   <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Método:</span>
+                      <span className="font-mono">{testResults.useProxy ? 'Via proxy Supabase' : 'Requisição direta'}</span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Erro:</span>
                       <span className="font-mono text-red-600">{testResults.error?.name || 'Erro desconhecido'}</span>
@@ -210,13 +217,9 @@ const ConnectionDebugger = () => {
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Possível solução</AlertTitle>
                       <AlertDescription>
-                        {testResults.error?.name === 'TypeError' && testResults.error?.message.includes('Failed to fetch')
-                          ? 'O roteador pode não estar acessível. Verifique o endereço, porta e firewall.'
-                          : testResults.error?.message.includes('CORS')
-                          ? 'Erro de CORS. O roteador precisa permitir acesso da origem ' + window.location.origin
-                          : testResults.error?.message.includes('Mixed Content')
-                          ? 'Erro de conteúdo misto. Você está tentando acessar um endereço HTTP a partir de um contexto HTTPS.'
-                          : 'Verifique a conectividade com o roteador e as configurações de CORS.'}
+                        {testResults.useProxy 
+                          ? "Erro ao usar o proxy. Verifique se o usuário tem permissão para acessar as funções do Supabase."
+                          : "Tente usar o modo proxy para contornar problemas de CORS e conteúdo misto."}
                       </AlertDescription>
                     </Alert>
                   </div>

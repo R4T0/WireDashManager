@@ -3,6 +3,7 @@ import { toast } from '@/components/ui/sonner';
 import logger from '../loggerService';
 import { createAuthHeader, getMockInterfaces, getMockPeers } from './utils';
 import { MikrotikConfig, WireguardInterface, WireguardPeer } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Mikrotik API Client
@@ -11,6 +12,7 @@ class MikrotikApi {
   private baseUrl: string;
   private headers: Record<string, string>;
   private config: MikrotikConfig;
+  private useProxy: boolean = true;
 
   constructor(config: MikrotikConfig) {
     this.config = config;
@@ -29,27 +31,12 @@ class MikrotikApi {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       logger.info(`Making ${method} request to ${url}`);
-      logger.request(`API Request: ${method} ${url}`, {
-        headers: { ...this.headers, 'Authorization': '[REDACTED]' },
-        body: body ? JSON.stringify(body) : undefined
-      });
       
-      const response = await fetch(url, {
-        method,
-        mode: 'cors',
-        credentials: 'omit',
-        headers: this.headers,
-        body: method !== 'GET' ? JSON.stringify(body) : undefined
-      });
-      
-      if (!response.ok) {
-        logger.error(`API request failed with status ${response.status}`);
-        throw new Error(`API request failed with status ${response.status}`);
+      if (this.useProxy) {
+        return this.proxyRequest<T>(url, method, this.headers, body);
+      } else {
+        return this.directRequest<T>(url, method, body);
       }
-      
-      const data = await response.json();
-      logger.request(`API response:`, data);
-      return data as T;
     } catch (error) {
       logger.error('API request failed:', error);
       
@@ -65,6 +52,72 @@ class MikrotikApi {
       
       throw error;
     }
+  }
+
+  // Public version of request for testing purposes
+  public async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    if (this.useProxy) {
+      return this.proxyRequest<T>(url, method, this.headers, body);
+    } else {
+      return this.directRequest<T>(url, method, body);
+    }
+  }
+
+  private async proxyRequest<T>(url: string, method: string, headers: Record<string, string>, body?: any): Promise<T> {
+    logger.info(`Using proxy for request to ${url}`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('mikrotik-proxy', {
+        body: {
+          url,
+          method,
+          headers: { ...headers, 'Authorization': '[REDACTED_FOR_LOGS]' },
+          body
+        }
+      });
+      
+      if (error) {
+        logger.error('Proxy request failed:', error);
+        throw new Error(`Proxy request failed: ${error.message || 'Unknown error'}`);
+      }
+      
+      logger.request(`API proxy response:`, data);
+      
+      if (data.status >= 400) {
+        throw new Error(`API request failed with status ${data.status}: ${data.statusText}`);
+      }
+      
+      return data.data as T;
+    } catch (error) {
+      logger.error('Proxy request failed:', error);
+      toast.error('Falha na comunicação com o proxy');
+      throw error;
+    }
+  }
+
+  private async directRequest<T>(url: string, method: string, body?: any): Promise<T> {
+    logger.request(`API Request: ${method} ${url}`, {
+      headers: { ...this.headers, 'Authorization': '[REDACTED]' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    
+    const response = await fetch(url, {
+      method,
+      mode: 'cors',
+      credentials: 'omit',
+      headers: this.headers,
+      body: method !== 'GET' ? JSON.stringify(body) : undefined
+    });
+    
+    if (!response.ok) {
+      logger.error(`API request failed with status ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    logger.request(`API response:`, data);
+    return data as T;
   }
 
   // WireGuard interface methods
@@ -99,6 +152,12 @@ class MikrotikApi {
 
   public async deletePeer(id: string): Promise<void> {
     return this.request<void>(`/interface/wireguard/peers/${id}`, 'DELETE');
+  }
+
+  // Toggle proxy usage
+  public setUseProxy(useProxy: boolean): void {
+    this.useProxy = useProxy;
+    logger.info(`Proxy mode ${useProxy ? 'enabled' : 'disabled'}`);
   }
 }
 
