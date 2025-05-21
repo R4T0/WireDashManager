@@ -60,7 +60,7 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
       name: peer.name,
       interface: peer.interface,
       allowedAddress: peer.allowedAddress,
-      disabled: peer.disabled
+      disabled: typeof peer.disabled === 'string' ? peer.disabled === 'true' : Boolean(peer.disabled)
     });
     setIsEditing(true);
     setOpenDialog(true);
@@ -85,6 +85,7 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     
     try {
       const api = new MikrotikApi(config);
+      // Usar o endpoint correto para exclusão
       await api.deletePeer(id);
       setPeers(prev => prev.filter(peer => peer.id !== id));
       toast.success('Peer excluído com sucesso');

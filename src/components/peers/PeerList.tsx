@@ -25,6 +25,26 @@ const PeerList = ({ peers, loading, onEdit, onDelete }: PeerListProps) => {
     );
   }
 
+  // Helper function to get status text and style based on disabled parameter
+  const getStatusInfo = (peer: WireguardPeer) => {
+    // Check if disabled is true by converting to boolean properly
+    const isDisabled = typeof peer.disabled === 'string' 
+      ? peer.disabled === "true" 
+      : Boolean(peer.disabled);
+
+    if (isDisabled) {
+      return {
+        text: 'Desativado',
+        className: 'bg-red-900/30 text-red-400'
+      };
+    } else {
+      return {
+        text: 'Ativo',
+        className: 'bg-green-900/30 text-green-400'
+      };
+    }
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -37,38 +57,40 @@ const PeerList = ({ peers, loading, onEdit, onDelete }: PeerListProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {peers.map((peer) => (
-          <TableRow key={peer.id}>
-            <TableCell className="font-medium">{peer.name}</TableCell>
-            <TableCell>{peer.interface}</TableCell>
-            <TableCell>{peer.allowedAddress}</TableCell>
-            <TableCell>
-              <span 
-                className={`inline-flex px-2 py-1 rounded-full text-xs ${
-                  peer.disabled ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'
-                }`}
-              >
-                {peer.disabled ? 'Desativado' : 'Ativo'}
-              </span>
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm" onClick={() => onEdit(peer)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <QrCode className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <DownloadCloud className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => onDelete(peer.id)}>
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+        {peers.map((peer) => {
+          const statusInfo = getStatusInfo(peer);
+          
+          return (
+            <TableRow key={peer.id}>
+              <TableCell className="font-medium">{peer.name}</TableCell>
+              <TableCell>{peer.interface}</TableCell>
+              <TableCell>{peer.allowedAddress}</TableCell>
+              <TableCell>
+                <span 
+                  className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}
+                >
+                  {statusInfo.text}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => onEdit(peer)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <DownloadCloud className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onDelete(peer.id)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

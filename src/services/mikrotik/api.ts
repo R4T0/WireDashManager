@@ -1,4 +1,3 @@
-
 import { toast } from '@/components/ui/sonner';
 import logger from '../loggerService';
 import { createAuthHeader, getMockInterfaces, getMockPeers } from './utils';
@@ -141,7 +140,6 @@ class MikrotikApi {
 
   public async deleteInterface(id: string): Promise<void> {
     // Use the specific ID in the endpoint to delete the interface
-    // The format is /interface/wireguard/{id}
     return this.makeRequest<void>(`/interface/wireguard/${id}`, 'DELETE');
   }
 
