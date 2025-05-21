@@ -30,6 +30,26 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
     );
   }
 
+  // Helper function to get status text and style
+  const getStatusInfo = (iface: WireguardInterface) => {
+    if (iface.disabled) {
+      return {
+        text: 'Desativado',
+        className: 'bg-red-900/30 text-red-400'
+      };
+    } else if (iface.running) {
+      return {
+        text: 'Rodando',
+        className: 'bg-green-900/30 text-green-400'
+      };
+    } else {
+      return {
+        text: 'Parado',
+        className: 'bg-yellow-900/30 text-yellow-400'
+      };
+    }
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -42,28 +62,32 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {interfaces.map((iface) => (
-          <TableRow key={iface.id}>
-            <TableCell className="font-medium">{iface.name}</TableCell>
-            <TableCell>{iface.listenPort}</TableCell>
-            <TableCell>{iface.mtu}</TableCell>
-            <TableCell>
-              <span className={`inline-flex px-2 py-1 rounded-full text-xs ${iface.disabled ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>
-                {iface.disabled ? 'Desativado' : (iface.running ? 'Rodando' : 'Parado')}
-              </span>
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm" onClick={() => onEdit(iface)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => onDelete(iface.id)}>
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+        {interfaces.map((iface) => {
+          const statusInfo = getStatusInfo(iface);
+          
+          return (
+            <TableRow key={iface.id}>
+              <TableCell className="font-medium">{iface.name}</TableCell>
+              <TableCell>{iface.listenPort}</TableCell>
+              <TableCell>{iface.mtu}</TableCell>
+              <TableCell>
+                <span className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}>
+                  {statusInfo.text}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => onEdit(iface)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onDelete(iface.id)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

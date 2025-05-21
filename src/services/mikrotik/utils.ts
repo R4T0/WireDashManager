@@ -1,3 +1,4 @@
+
 import logger from '../loggerService';
 
 /**
@@ -42,6 +43,17 @@ PublicKey = ${config.serverPublicKey}
 AllowedIPs = ${config.allowedIps}
 Endpoint = ${config.endpoint}:${config.endpointPort}
 `;
+};
+
+// Format interface data for API request
+export const formatInterfaceData = (formData: any): Record<string, string> => {
+  // Convert the form data to match the Mikrotik API format as shown in the image
+  return {
+    name: formData.name,
+    "listen-port": formData.listenPort,
+    mtu: formData.mtu,
+    disabled: formData.disabled ? "true" : "false"
+  };
 };
 
 // Mock data generators for testing

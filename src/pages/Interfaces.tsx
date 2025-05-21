@@ -9,6 +9,7 @@ import { Network, Plus } from 'lucide-react';
 import InterfaceList from '@/components/interfaces/InterfaceList';
 import InterfaceFormDialog from '@/components/interfaces/InterfaceFormDialog';
 import NotConnected from '@/components/interfaces/NotConnected';
+import { formatInterfaceData } from '@/services/mikrotik/utils';
 
 const Interfaces = () => {
   const { config, isConnected, testConnection } = useMikrotik();
@@ -68,8 +69,8 @@ const Interfaces = () => {
   const handleAdd = () => {
     setSelectedInterface(null);
     setFormData({
-      name: 'wg-new',
-      listenPort: '51820',
+      name: 'wireguard1',
+      listenPort: '13231',
       mtu: '1420',
       disabled: false
     });
@@ -102,8 +103,9 @@ const Interfaces = () => {
       const api = new MikrotikApi(config);
       
       if (isEditing && selectedInterface) {
-        // Update existing interface
-        const updatedInterface = await api.updateInterface(selectedInterface.id, formData);
+        // Update existing interface - using the formatted data
+        const formattedData = formatInterfaceData(formData);
+        const updatedInterface = await api.updateInterface(selectedInterface.id, formattedData);
         
         setInterfaces(prev => prev.map(iface => 
           iface.id === selectedInterface.id ? updatedInterface : iface
@@ -111,14 +113,17 @@ const Interfaces = () => {
         
         toast.success('Interface atualizada com sucesso');
       } else {
-        // Create new interface
-        const newInterface = await api.createInterface(formData);
+        // Create new interface - using the formatted data according to image
+        const formattedData = formatInterfaceData(formData);
+        const newInterface = await api.createInterface(formattedData);
         
         setInterfaces(prev => [...prev, newInterface]);
         toast.success('Interface criada com sucesso');
       }
       
       setOpenDialog(false);
+      // Refresh the interface list to get the updated running status
+      fetchInterfaces();
     } catch (error) {
       console.error('Failed to save interface:', error);
       toast.error('Falha ao salvar interface');
