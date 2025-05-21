@@ -3,7 +3,6 @@ import { toast } from '@/components/ui/sonner';
 import logger from '../loggerService';
 import { createAuthHeader, getMockInterfaces, getMockPeers } from './utils';
 import { MikrotikConfig, WireguardInterface, WireguardPeer } from './types';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Mikrotik API Client
@@ -28,37 +27,26 @@ class MikrotikApi {
   private async request<T>(endpoint: string, method: string, body?: any): Promise<T> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      logger.info(`Making ${method} request to ${url} via proxy`);
-      logger.request(`API Request via proxy: ${method} ${url}`, {
+      logger.info(`Making ${method} request to ${url}`);
+      logger.request(`API Request: ${method} ${url}`, {
         headers: { ...this.headers, 'Authorization': '[REDACTED]' },
         body: body ? JSON.stringify(body) : undefined
       });
       
-      // Usar a edge function como proxy para evitar problemas de CORS e Mixed Content
-      const { data: proxyResponse, error: proxyError } = await supabase.functions.invoke('mikrotik-proxy', {
-        body: {
-          url,
-          method,
-          headers: this.headers,
-          body: method !== 'GET' ? body : undefined
-        }
+      const response = await fetch(url, {
+        method,
+        headers: this.headers,
+        body: method !== 'GET' ? JSON.stringify(body) : undefined
       });
       
-      if (proxyError) {
-        logger.error('Proxy request failed:', proxyError);
-        throw new Error(`Proxy error: ${proxyError.message}`);
+      if (!response.ok) {
+        logger.error(`API request failed with status ${response.status}`);
+        throw new Error(`API request failed with status ${response.status}`);
       }
       
-      if (!proxyResponse) {
-        throw new Error('No response from proxy');
-      }
-      
-      if (proxyResponse.status >= 400) {
-        throw new Error(`API request failed with status ${proxyResponse.status}`);
-      }
-      
-      logger.request(`Proxy response:`, proxyResponse);
-      return proxyResponse.body as T;
+      const data = await response.json();
+      logger.request(`API response:`, data);
+      return data as T;
     } catch (error) {
       logger.error('API request failed:', error);
       toast.error('Falha na comunicação com o roteador');
