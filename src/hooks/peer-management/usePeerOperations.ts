@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
 import MikrotikApi from '@/services/mikrotikService';
 import { WireguardPeer } from '@/services/mikrotik/types';
 import { PeerFormData, UsePeerManagementProps } from './types';
 import { findNextAvailableIP } from './peerUtils';
 import { generateKeys } from '@/services/mikrotik/utils';
+import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
 
 export const usePeerOperations = ({ 
   config, 
@@ -20,6 +21,7 @@ export const usePeerOperations = ({
   const [selectedPeer, setSelectedPeer] = useState<WireguardPeer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const { defaults } = useWireGuardDefaults();
 
   // Form state
   const [formData, setFormData] = useState<PeerFormData>({
@@ -52,15 +54,19 @@ export const usePeerOperations = ({
     // Get the default interface if available
     const defaultInterface = interfaces.length > 0 ? interfaces[0] : '';
     
+    // Get the IP range from defaults (if available)
+    const ipRange = defaults.allowedIpRange || '10.0.0.0/24';
+    const baseNetwork = ipRange.split('/')[0].substring(0, ipRange.lastIndexOf('.'));
+    
     // Generate the next available IP
-    const nextIP = findNextAvailableIP(peers);
+    const nextIP = findNextAvailableIP(peers, baseNetwork);
     
     setFormData({
       name: '',
       interface: defaultInterface,
       allowedAddress: nextIP,
-      endpoint: '',
-      endpointPort: '51820',
+      endpoint: defaults.endpoint || '',
+      endpointPort: defaults.port || '51820',
       disabled: false
     });
     

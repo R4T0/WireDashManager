@@ -4,6 +4,7 @@ import { WireguardPeer } from '@/services/mikrotikService';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Edit, QrCode, DownloadCloud, Trash } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PeerListProps {
   peers: WireguardPeer[];
@@ -13,6 +14,13 @@ interface PeerListProps {
 }
 
 const PeerList = ({ peers, loading, onEdit, onDelete }: PeerListProps) => {
+  const navigate = useNavigate();
+
+  const handleQrCodeClick = (peer: WireguardPeer) => {
+    // Navigate to QRCode page with peer ID
+    navigate(`/qrcode?peerId=${peer['.id']}`);
+  };
+
   if (loading) {
     return <div className="text-center py-6">Carregando peers...</div>;
   }
@@ -77,7 +85,7 @@ const PeerList = ({ peers, loading, onEdit, onDelete }: PeerListProps) => {
                   <Button variant="outline" size="sm" onClick={() => onEdit(peer)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleQrCodeClick(peer)}>
                     <QrCode className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="sm">

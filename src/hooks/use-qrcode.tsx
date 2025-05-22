@@ -6,6 +6,7 @@ import logger from '@/services/loggerService';
 import { usePeerSearch } from './qrcode/usePeerSearch';
 import { useQRCodeGeneration } from './qrcode/useQRCodeGeneration';
 import { useWireGuardDefaults } from './qrcode/useWireGuardDefaults';
+import { useLocation } from 'react-router-dom';
 
 interface UseQRCodeProps {
   isConnected: boolean;
@@ -16,6 +17,7 @@ interface UseQRCodeProps {
 export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProps) => {
   const [loading, setLoading] = useState(true);
   const [interfaces, setInterfaces] = useState<WireguardInterface[]>([]);
+  const location = useLocation();
   
   const { defaults } = useWireGuardDefaults();
   
@@ -43,7 +45,18 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   useEffect(() => {
     if (isConnected) {
       logger.info("Connection is active, fetching peers and interfaces");
-      fetchData();
+      fetchData().then(() => {
+        // Check for peer ID in URL query parameters
+        const queryParams = new URLSearchParams(location.search);
+        const peerId = queryParams.get('peerId');
+        
+        if (peerId) {
+          logger.info(`Found peer ID in URL: ${peerId}`);
+          setTimeout(() => {
+            handlePeerSelect(peerId);
+          }, 500); // Small delay to ensure peers are loaded
+        }
+      });
     } else {
       logger.info("Not connected to router, testing connection");
       testConnection().then(connected => {
@@ -56,7 +69,7 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
         }
       });
     }
-  }, [isConnected]);
+  }, [isConnected, location.search]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -76,9 +89,11 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
       
       // Log the interfaces data to verify we're getting the public keys
       logger.debug("Interfaces data:", interfacesData);
+      return { peers: peersData, interfaces: interfacesData };
     } catch (error) {
       logger.error('Failed to fetch data:', error);
       toast.error('Falha ao carregar dados do roteador');
+      return { peers: [], interfaces: [] };
     } finally {
       setLoading(false);
     }

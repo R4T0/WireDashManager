@@ -76,7 +76,7 @@ const PeerSearch: React.FC<PeerSearchProps> = ({
                 <div className="text-right">{selectedPeer.interface}</div>
                 
                 <div className="text-wireguard-muted-foreground">Allowed Address:</div>
-                <div className="text-right">{selectedPeer['allowed-address'] || '-'}</div>
+                <div className="text-right">{selectedPeer['allowed-address'] || selectedPeer.allowedAddress || '-'}</div>
               </div>
             </div>
           )}
