@@ -23,16 +23,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Função para verificar se o usuário é admin
     const checkUserAdmin = async (userId: string) => {
       try {
-        // Use the correct typing for from() method
-        // @ts-ignore - We've created the table in the database, but TypeScript doesn't know about it yet
         const { data, error } = await supabase
           .from('users')
           .select('isadmin')
-          .eq('id', userId)
-          .single();
+          .eq('id', userId);
           
-        if (error) throw error;
-        setIsAdmin(data?.isadmin || false); // Note: using isadmin (lowercase) from the database
+        if (error) {
+          console.error('Erro ao verificar permissões:', error);
+          setIsAdmin(false);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          setIsAdmin(data[0]?.isadmin || false); 
+        } else {
+          setIsAdmin(false);
+        }
       } catch (error) {
         console.error('Erro ao verificar permissões do usuário:', error);
         setIsAdmin(false);
@@ -42,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log('Auth event:', event);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         

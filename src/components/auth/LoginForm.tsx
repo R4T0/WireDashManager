@@ -61,14 +61,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
       
       if (data.user) {
         // Verificar se o usuário tem permissão de acesso
-        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
-          .eq('id', data.user.id)
-          .single();
+          .eq('id', data.user.id);
         
-        if (userError || !userData) {
+        if (userError || !userData || userData.length === 0) {
           await supabase.auth.signOut();
           throw new Error('Usuário não tem permissão para acessar o sistema');
         }

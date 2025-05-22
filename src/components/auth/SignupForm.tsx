@@ -46,35 +46,67 @@ const SignupForm: React.FC<SignupFormProps> = ({
       // Limpar estado de autenticação
       cleanupAuthState();
       
-      // Registrar novo usuário
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      let userId = null;
       
-      if (error) throw error;
-      
-      if (data.user) {
-        // Criar registro na tabela de usuários
-        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
-        const { error: insertError } = await supabase.from('users').insert({
-          id: data.user.id,
-          email: email,
-          // Se for o primeiro usuário, será admin por padrão
-          isadmin: isFirstUser // Note: using isadmin (lowercase) for the database
+      // Se for o primeiro usuário, podemos registrar diretamente
+      if (isFirstUser) {
+        // Registrar novo usuário
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
         });
         
-        if (insertError) throw insertError;
-        
-        toast({
-          title: 'Registro realizado com sucesso',
-          description: isFirstUser
-            ? 'Você foi registrado como administrador do sistema.'
-            : 'Sua conta foi criada com sucesso.',
+        if (error) throw error;
+        userId = data.user?.id;
+      } else {
+        // Caso não seja o primeiro usuário, primeiro registramos na auth
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
         });
         
-        // Redirecionar para página inicial
-        navigate('/');
+        if (error) throw error;
+        userId = data.user?.id;
+      }
+      
+      if (userId) {
+        try {
+          // Criamos o registro na tabela users manualmente
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: userId,
+              email: email,
+              isadmin: isFirstUser
+            });
+          
+          if (insertError) throw insertError;
+          
+          toast({
+            title: 'Registro realizado com sucesso',
+            description: isFirstUser
+              ? 'Você foi registrado como administrador do sistema.'
+              : 'Sua conta foi criada com sucesso.',
+          });
+          
+          // Redirecionar para página inicial
+          navigate('/');
+        } catch (insertError: any) {
+          console.error('Erro ao inserir na tabela users:', insertError);
+          // Se falhar o insert, tente fazer signIn para manter a sessão
+          await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          toast({
+            title: 'Registro parcial',
+            description: 'Sua conta foi criada, mas houve um erro ao configurar as permissões.',
+            variant: 'destructive'
+          });
+          
+          navigate('/');
+        }
       }
     } catch (error: any) {
       console.error('Erro de registro:', error);
