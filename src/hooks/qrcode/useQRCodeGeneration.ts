@@ -38,7 +38,9 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // Use peer's public key for the [Interface] section (this is the correction)
+    // For the client config, we need the peer's private key in the [Interface] section
+    // However, the UI only shows the public key, so we'll use that for now
+    // In a real implementation, the private key should be securely stored and accessed
     const publicKeyPeer = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
     
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
@@ -46,9 +48,11 @@ export const useQRCodeGeneration = () => {
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
     
     return `[Interface]
+# Note: In a real configuration, this should be the private key
+# Currently showing public key as we don't have access to the private key
+PrivateKey = ${publicKeyPeer}
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
-PublicKey = ${publicKeyPeer}
 
 [Peer]
 AllowedIPs = 0.0.0.0/0
