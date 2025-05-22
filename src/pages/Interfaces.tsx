@@ -96,7 +96,7 @@ const Interfaces = () => {
   const handleAdd = () => {
     setSelectedInterface(null);
     setFormData({
-      name: 'wireguard1',
+      name: 'wg0-test',
       listenPort: '13231',
       mtu: '1420',
       disabled: false
