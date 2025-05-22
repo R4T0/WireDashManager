@@ -59,7 +59,7 @@ const PeerList = ({ peers, loading, onEdit, onDelete }: PeerListProps) => {
         <TableRow>
           <TableHead>Nome</TableHead>
           <TableHead>Interface</TableHead>
-          <TableHead>Endereço Permitido</TableHead>
+          <TableHead>Allowed Address</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
