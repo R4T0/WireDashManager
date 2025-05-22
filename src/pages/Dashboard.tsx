@@ -73,12 +73,22 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (isConnected) {
-      // Update stats with real data
-      const activeInterfaces = interfacesData?.filter(iface => 
-        iface.running === true || iface.running === 'true').length || 0;
+      // Update stats with real data, properly handling boolean string values
+      const activeInterfaces = interfacesData?.filter(iface => {
+        // Handle both boolean and string representations of "running"
+        const isRunning = typeof iface.running === 'string'
+          ? iface.running === "true"
+          : Boolean(iface.running);
+        return isRunning;
+      }).length || 0;
       
-      const activePeers = peersData?.filter(peer => 
-        peer.disabled === false || peer.disabled === 'false').length || 0;
+      const activePeers = peersData?.filter(peer => {
+        // Handle both boolean and string representations of "disabled"
+        const isDisabled = typeof peer.disabled === 'string'
+          ? peer.disabled === "true"
+          : Boolean(peer.disabled);
+        return !isDisabled; // Count peers that are not disabled
+      }).length || 0;
       
       setStats({
         interfaces: interfacesData?.length || 0,
