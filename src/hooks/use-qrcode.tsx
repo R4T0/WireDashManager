@@ -86,6 +86,7 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
 
   // Esta é a função única que lidará com a seleção de peers e geração do QR code
   const handlePeerSelect = (peerId: string) => {
+    // Use o handler do usePeerSearch para selecionar o peer pelo ID
     const peer = peerSearchSelectHandler(peerId);
     
     if (peer) {

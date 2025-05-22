@@ -20,11 +20,16 @@ export const usePeerSearch = () => {
   });
 
   const handlePeerSelect = (peerId: string) => {
+    logger.info(`Selecting peer with ID: ${peerId}`);
     const peer = peers.find(p => p['.id'] === peerId);
+    
     if (peer) {
-      logger.info(`Selected peer: ${peer.name}`);
+      logger.info(`Found peer: ${peer.name}`);
       setSelectedPeer(peer);
+    } else {
+      logger.warn(`No peer found with ID: ${peerId}`);
     }
+    
     return peer;
   };
 
