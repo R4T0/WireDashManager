@@ -4,7 +4,7 @@ import { toast } from '@/components/ui/sonner';
 import MikrotikApi from '@/services/mikrotikService';
 import { WireguardPeer } from '@/services/mikrotik/types';
 import { PeerFormData, UsePeerManagementProps } from './types';
-import { findNextAvailableIP } from './peerUtils';
+import { findNextAvailableIP, validateIPFormat } from './peerUtils';
 import { generateKeys } from '@/services/mikrotik/utils';
 import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
 
@@ -60,6 +60,13 @@ export const usePeerOperations = ({
     
     // Generate the next available IP
     const nextIP = findNextAvailableIP(peers, baseNetwork);
+    
+    // Validate that the IP has the correct format (all 4 octets)
+    if (!validateIPFormat(nextIP)) {
+      console.error('Generated IP has incorrect format:', nextIP);
+      toast.error('Erro ao gerar endereço IP');
+      return;
+    }
     
     setFormData({
       name: '',

@@ -54,7 +54,8 @@ const Peers = () => {
             peers={peers} 
             loading={loading} 
             onEdit={handleEdit} 
-            onDelete={handleDelete} 
+            onDelete={handleDelete}
+            interfaces={interfaces}
           />
         </CardContent>
       </Card>

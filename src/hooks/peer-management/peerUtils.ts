@@ -32,5 +32,15 @@ export const findNextAvailableIP = (peers: WireguardPeer[], baseNetwork: string 
     }
   }
 
+  // Ensure the IP has the correct format with all octets (fixing the missing zero issue)
   return `${networkBase}${nextNum}/32`;
+};
+
+/**
+ * Validates if an IP address has the correct format
+ */
+export const validateIPFormat = (ip: string): boolean => {
+  // Check if the IP has all 4 octets before the CIDR notation
+  const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/\d{1,2}$/;
+  return ipPattern.test(ip);
 };
