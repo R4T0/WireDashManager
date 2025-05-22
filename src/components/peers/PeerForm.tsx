@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
+import logger from '@/services/loggerService';
 
 interface PeerFormData {
   name: string;
@@ -39,21 +40,27 @@ const PeerForm = ({
 }: PeerFormProps) => {
   const { defaults, loading } = useWireGuardDefaults();
 
-  // Preencher endpoint com o valor padrão quando não estiver em modo de edição
+  // Preencher endpoint e outros campos com valores padrão quando não estiver em modo de edição
   useEffect(() => {
-    if (!isEditing && defaults.endpoint && !formData.endpoint) {
-      onChange('endpoint', defaults.endpoint);
-      onChange('endpointPort', defaults.port || '51820');
-    }
-    
-    // Garantir que o allowedAddress use o formato da configuração padrão se estiver vazio
-    if (!isEditing && defaults.allowedIpRange && (!formData.allowedAddress || formData.allowedAddress === '')) {
-      // Obter os primeiros 3 octetos da range IP
-      const ipParts = defaults.allowedIpRange.split('/')[0].split('.');
-      if (ipParts.length === 4) {
-        const baseNetwork = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
-        const nextOctet = "2"; // Um valor padrão seguro para começar
-        onChange('allowedAddress', `${baseNetwork}.${nextOctet}/32`);
+    if (!isEditing) {
+      // Set endpoint defaults if empty
+      if (defaults.endpoint && !formData.endpoint) {
+        onChange('endpoint', defaults.endpoint);
+        onChange('endpointPort', defaults.port || '51820');
+      }
+      
+      // Set IP address default format if empty
+      if (defaults.allowedIpRange && (!formData.allowedAddress || formData.allowedAddress === '')) {
+        logger.debug('Setting default allowed address from range:', defaults.allowedIpRange);
+        
+        // Extract network base from IP range
+        const ipParts = defaults.allowedIpRange.split('/')[0].split('.');
+        if (ipParts.length === 4) {
+          const baseNetwork = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
+          const nextOctet = "2"; // Um valor padrão seguro para começar
+          onChange('allowedAddress', `${baseNetwork}.${nextOctet}/32`);
+          logger.debug('Set default allowed address:', `${baseNetwork}.${nextOctet}/32`);
+        }
       }
     }
   }, [defaults, isEditing, formData.endpoint, formData.allowedAddress, onChange]);
@@ -114,7 +121,7 @@ const PeerForm = ({
               value={formData.allowedAddress}
               onChange={(e) => onChange('allowedAddress', e.target.value)}
               className="col-span-3 form-input"
-              placeholder="10.0.0.1/32"
+              placeholder={`${defaults.allowedIpRange?.split('/')[0].replace(/\.\d+$/, '')}.X/32`}
             />
           </div>
 

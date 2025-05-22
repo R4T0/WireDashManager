@@ -59,37 +59,50 @@ export const usePeerOperations = ({
     // Get the default interface if available
     const defaultInterface = interfaces.length > 0 ? interfaces[0].name : '';
     
-    // Get the IP range from defaults
+    // Extract network base from the default IP range
+    // The format should be like "10.0.0.0/24"
     const ipRange = defaults.allowedIpRange || '10.0.0.0/24';
     
-    // Fix: Ensure we get the correct network part (first 3 octets)
+    // Extract the network part (first 3 octets)
     const ipParts = ipRange.split('/')[0].split('.');
-    if (ipParts.length !== 4) {
-      toast.error('Erro no formato do IP padrão');
+    
+    // Ensure we have at least 3 octets
+    if (ipParts.length < 3) {
+      toast.error('Formato do IP padrão inválido');
       return;
     }
     
+    // Combine the first 3 octets to form the network base
     const baseNetwork = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
+    logger.debug('Network base for new peer:', baseNetwork);
     
     // Generate the next available IP
     const nextIP = findNextAvailableIP(peers, baseNetwork);
+    logger.debug('Generated IP for new peer:', nextIP);
     
     // Validate IP format
     if (!validateIPFormat(nextIP)) {
-      console.error('Generated IP has incorrect format:', nextIP);
-      toast.error('Erro ao gerar endereço IP');
-      return;
+      toast.error('Erro ao gerar endereço IP. Usando formato padrão 10.0.0.2/32');
+      // Use a fallback IP if generation fails
+      setFormData({
+        name: '',
+        interface: defaultInterface,
+        allowedAddress: '10.0.0.2/32',
+        endpoint: defaults.endpoint || '',
+        endpointPort: defaults.port || '51820',
+        disabled: false
+      });
+    } else {
+      // Use the generated IP
+      setFormData({
+        name: '',
+        interface: defaultInterface,
+        allowedAddress: nextIP,
+        endpoint: defaults.endpoint || '',
+        endpointPort: defaults.port || '51820',
+        disabled: false
+      });
     }
-    
-    // Usar as configurações padrão
-    setFormData({
-      name: '',
-      interface: defaultInterface,
-      allowedAddress: nextIP,
-      endpoint: defaults.endpoint || '',
-      endpointPort: defaults.port || '51820',
-      disabled: false
-    });
     
     setIsEditing(false);
     setOpenDialog(true);
