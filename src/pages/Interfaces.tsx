@@ -48,6 +48,15 @@ const Interfaces = () => {
 
       // Certifique-se de que os dados estão no formato correto
       const formattedData = data.map(item => {
+        // Convert the string 'true' or 'false' to boolean values
+        const disabled = typeof item.disabled === 'string' 
+          ? item.disabled.toLowerCase() === 'true' 
+          : Boolean(item.disabled);
+          
+        const running = typeof item.running === 'string'
+          ? item.running.toLowerCase() === 'true'
+          : Boolean(item.running);
+          
         // Verifica se o objeto tem propriedades no formato kebab-case e converte para camelCase
         const iface: WireguardInterface = {
           id: item.id || item['.id'] || String(Math.random()),
@@ -56,8 +65,8 @@ const Interfaces = () => {
           mtu: item.mtu,
           privateKey: item.privateKey || item['private-key'] || '',
           publicKey: item.publicKey || item['public-key'] || '',
-          running: item.running || false,
-          disabled: item.disabled || false
+          running: running,
+          disabled: disabled
         };
         return iface;
       });

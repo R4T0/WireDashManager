@@ -18,8 +18,8 @@ export interface WireguardInterface {
   mtu: string;
   privateKey: string;
   publicKey: string;
-  running: boolean | string;
-  disabled: boolean | string;
+  running: boolean;
+  disabled: boolean;
   // Adicionando propriedades com kebab-case para compatibilidade com a API
   [key: string]: any;
 }
