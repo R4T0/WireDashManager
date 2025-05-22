@@ -65,9 +65,29 @@ export const usePeerOperations = ({
       };
       
       if (isEditing && selectedPeer) {
-        success = await updatePeer(selectedPeer.id, peerData);
+        // Converting to PeerFormData when passing to updatePeer
+        success = await updatePeer(selectedPeer.id, {
+          name: formData.name,
+          interface: formData.interface,
+          allowedAddress: formData.allowedAddress,
+          endpoint: formData.endpoint || "",
+          endpointPort: formData.endpointPort,
+          publicKey: formData.publicKey,
+          persistentKeepalive: formData.persistentKeepalive,
+          disabled: formData.disabled
+        });
       } else {
-        success = await createPeer(peerData);
+        // Converting to PeerFormData when passing to createPeer
+        success = await createPeer({
+          name: formData.name,
+          interface: formData.interface,
+          allowedAddress: formData.allowedAddress,
+          endpoint: formData.endpoint || "",
+          endpointPort: formData.endpointPort,
+          publicKey: formData.publicKey,
+          persistentKeepalive: formData.persistentKeepalive,
+          disabled: formData.disabled
+        });
       }
       
       if (success) {

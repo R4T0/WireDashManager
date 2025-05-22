@@ -8,6 +8,7 @@ export interface PeerFormData {
   endpoint: string;
   endpointPort: string;
   publicKey?: string;
+  persistentKeepalive?: string;
   disabled: boolean;
 }
 
