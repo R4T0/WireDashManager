@@ -37,8 +37,8 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // Use peer's public key for the [Interface] section
-    const publicKeyPeer = peer.publicKey || peer['public-key'] || '<PUBLICK-KEY-PEER>';
+    // Use peer's public key for the [Interface] section (this is the correction)
+    const publicKeyPeer = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
     
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
@@ -48,6 +48,7 @@ export const useQRCodeGeneration = () => {
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
 PrivateKey = <PRIVATE-KEY-CLIENT>
+# PublicKey = ${publicKeyPeer}
 
 [Peer]
 AllowedIPs = 0.0.0.0/0
