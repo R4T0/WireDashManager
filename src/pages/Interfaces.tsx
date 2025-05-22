@@ -50,11 +50,11 @@ const Interfaces = () => {
       const formattedData = data.map(item => {
         // Convert the string 'true' or 'false' to boolean values
         const disabled = typeof item.disabled === 'string' 
-          ? item.disabled.toLowerCase() === 'true' 
+          ? (item.disabled as string).toLowerCase() === 'true' 
           : Boolean(item.disabled);
           
         const running = typeof item.running === 'string'
-          ? item.running.toLowerCase() === 'true' 
+          ? (item.running as string).toLowerCase() === 'true' 
           : Boolean(item.running);
           
         // Verifica se o objeto tem propriedades no formato kebab-case e converte para camelCase
