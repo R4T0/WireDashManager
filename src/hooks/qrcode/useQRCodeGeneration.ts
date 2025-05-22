@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
@@ -38,18 +37,19 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // For the client's [Interface] section, we use the peer's public key
-    // This is the correct key to use in the WireGuard configuration
-    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
+    // For the client's [Interface] section, we use the peer's private key if available
+    // otherwise use the public key (which would need to be replaced in a real scenario)
+    const peerPrivateKey = peer.privateKey || '<PRIVATE-KEY-PEER>';
     
     // Get values from peer or use defaults
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
+    const persistentKeepalive = peer.persistentKeepalive || peer['persistent-keepalive'] || '25';
     
     // Generate a configuration following the WireGuard standard format
     return `[Interface]
-PrivateKey = ${peerPublicKey}
+PrivateKey = ${peerPrivateKey}
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
 
@@ -57,7 +57,7 @@ DNS = ${defaults.dns}
 PublicKey = ${serverPublicKey}
 AllowedIPs = 0.0.0.0/0
 Endpoint = ${endpoint}:${endpointPort}
-PersistentKeepalive = 25
+PersistentKeepalive = ${persistentKeepalive}
 `;
   };
 
