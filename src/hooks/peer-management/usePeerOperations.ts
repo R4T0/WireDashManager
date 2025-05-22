@@ -61,7 +61,15 @@ export const usePeerOperations = ({
     
     // Get the IP range from defaults
     const ipRange = defaults.allowedIpRange || '10.0.0.0/24';
-    const baseNetwork = ipRange.split('/')[0].substring(0, ipRange.lastIndexOf('.'));
+    
+    // Fix: Ensure we get the correct network part (first 3 octets)
+    const ipParts = ipRange.split('/')[0].split('.');
+    if (ipParts.length !== 4) {
+      toast.error('Erro no formato do IP padrão');
+      return;
+    }
+    
+    const baseNetwork = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
     
     // Generate the next available IP
     const nextIP = findNextAvailableIP(peers, baseNetwork);

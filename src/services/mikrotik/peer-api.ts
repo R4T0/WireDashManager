@@ -39,7 +39,7 @@ export class WireGuardPeerAPI {
   async createPeer(peerData: any): Promise<WireguardPeer> {
     logger.info('Creating peer with data:', peerData);
     
-    // Certifique-se de que todos os campos obrigatórios estão presentes
+    // Ensure all required fields are present
     const peerDataToSend = {
       ...peerData,
       "persistent-keepalive": peerData["persistent-keepalive"] || "25"
@@ -50,7 +50,7 @@ export class WireGuardPeerAPI {
         logger.debug('Peer created, API response:', response);
         const id = response['.id'] || String(Date.now());
         
-        // Mapear o peer criado para o formato da aplicação
+        // Map created peer to application format
         return {
           id,
           name: peerData.name,
@@ -60,7 +60,7 @@ export class WireGuardPeerAPI {
           endpointPort: peerData['endpoint-port'],
           publicKey: peerData['public-key'],
           disabled: peerData.disabled,
-          // Incluir quaisquer outros campos relevantes
+          // Include any other relevant fields
           ...response
         };
       });
@@ -73,7 +73,7 @@ export class WireGuardPeerAPI {
       .then(response => {
         logger.debug(`Peer ${id} updated, API response:`, response);
         
-        // Mapear o peer atualizado para o formato da aplicação
+        // Map updated peer to application format
         return {
           id,
           name: peerData.name,
@@ -83,7 +83,7 @@ export class WireGuardPeerAPI {
           endpointPort: peerData['endpoint-port'],
           publicKey: peerData['public-key'],
           disabled: peerData.disabled,
-          // Incluir quaisquer outros campos relevantes
+          // Include any other relevant fields
           ...response
         } as WireguardPeer;
       });

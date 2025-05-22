@@ -46,12 +46,15 @@ const PeerForm = ({
       onChange('endpointPort', defaults.port || '51820');
     }
     
-    // Garantir que o allowedAddress use o formato da configuração padrão
-    if (!isEditing && defaults.allowedIpRange && !formData.allowedAddress) {
-      // Obter a base da rede do allowedIpRange
-      const baseNetwork = defaults.allowedIpRange.split('/')[0].substring(0, defaults.allowedIpRange.lastIndexOf('.'));
-      const lastOctet = formData.allowedAddress?.split('.')?.pop()?.split('/')[0] || '1';
-      onChange('allowedAddress', `${baseNetwork}.${lastOctet}/32`);
+    // Garantir que o allowedAddress use o formato da configuração padrão se estiver vazio
+    if (!isEditing && defaults.allowedIpRange && (!formData.allowedAddress || formData.allowedAddress === '')) {
+      // Obter os primeiros 3 octetos da range IP
+      const ipParts = defaults.allowedIpRange.split('/')[0].split('.');
+      if (ipParts.length === 4) {
+        const baseNetwork = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
+        const nextOctet = "2"; // Um valor padrão seguro para começar
+        onChange('allowedAddress', `${baseNetwork}.${nextOctet}/32`);
+      }
     }
   }, [defaults, isEditing, formData.endpoint, formData.allowedAddress, onChange]);
 
