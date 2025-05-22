@@ -7,13 +7,15 @@ export interface QRCodeDefaults {
   endpoint: string;
   port: string;
   dns: string;
+  allowedIpRange: string; // Added this missing property
 }
 
 export const useWireGuardDefaults = () => {
   const [defaults, setDefaults] = useState<QRCodeDefaults>({
     endpoint: 'vpn.example.com',
     port: '51820',
-    dns: '1.1.1.1'
+    dns: '1.1.1.1',
+    allowedIpRange: '10.0.0.0/24' // Add default value
   });
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +45,8 @@ export const useWireGuardDefaults = () => {
         setDefaults({
           endpoint: data.endpoint || 'vpn.example.com',
           port: data.port || '51820',
-          dns: data.dns || '1.1.1.1'
+          dns: data.dns || '1.1.1.1',
+          allowedIpRange: data.allowed_ip_range || '10.0.0.0/24' // Map to the database field
         });
       } else {
         logger.warn("No defaults found in Supabase");

@@ -9,6 +9,7 @@ export interface QRCodeDefaults {
   endpoint: string;
   port: string;
   dns: string;
+  allowedIpRange: string; // Added this missing property
 }
 
 export const useQRCodeGeneration = () => {
