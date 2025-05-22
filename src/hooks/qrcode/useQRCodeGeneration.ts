@@ -48,8 +48,6 @@ export const useQRCodeGeneration = () => {
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
     
     return `[Interface]
-# Note: In a real configuration, this should be the private key
-# Currently showing public key as we don't have access to the private key
 PrivateKey = ${publicKeyPeer}
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
