@@ -57,7 +57,7 @@ const MikrotikConnectionSettings = () => {
       <CardHeader>
         <CardTitle>Conexão API do Roteador</CardTitle>
         <CardDescription>
-          Configure os parâmetros de conexão para a API do roteador Mikrotik
+          Configure os parâmetros de conexão para a API-REST do roteador Mikrotik
         </CardDescription>
       </CardHeader>
       <CardContent>
