@@ -37,7 +37,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data && data.length > 0) {
           setIsAdmin(data[0]?.isadmin || false); 
         } else {
-          setIsAdmin(false);
+          // Se o usuário não existir na tabela users, inserir automaticamente
+          try {
+            const userResponse = await supabase.auth.getUser();
+            if (userResponse.data?.user) {
+              const { error: insertError } = await supabase
+                .from('users')
+                .insert({
+                  id: userId,
+                  email: userResponse.data.user.email,
+                  isadmin: false
+                });
+              
+              if (insertError) {
+                console.error('Erro ao inserir usuário na tabela users:', insertError);
+              } else {
+                console.log('Usuário inserido na tabela users com sucesso');
+                setIsAdmin(false); // Novo usuário inserido não é admin
+              }
+            }
+          } catch (insertErr) {
+            console.error('Erro ao inserir usuário:', insertErr);
+          }
         }
       } catch (error) {
         console.error('Erro ao verificar permissões do usuário:', error);

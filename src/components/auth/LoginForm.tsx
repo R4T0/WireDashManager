@@ -60,15 +60,43 @@ const LoginForm: React.FC<LoginFormProps> = ({
       if (error) throw error;
       
       if (data.user) {
-        // Verificar se o usuário tem permissão de acesso
+        // Verificar se o usuário existe na tabela users
+        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
           .eq('id', data.user.id);
         
-        if (userError || !userData || userData.length === 0) {
-          await supabase.auth.signOut();
-          throw new Error('Usuário não tem permissão para acessar o sistema');
+        if (userError) {
+          console.error('Erro ao verificar usuário:', userError);
+          
+          // Se o usuário não existir na tabela users, inserir automaticamente
+          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              isadmin: false
+            });
+          
+          if (insertError) {
+            console.error('Erro ao inserir usuário na tabela users:', insertError);
+          }
+        } else if (!userData || userData.length === 0) {
+          // Se o usuário não existir na tabela users, inserir automaticamente
+          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              isadmin: false
+            });
+          
+          if (insertError) {
+            console.error('Erro ao inserir usuário na tabela users:', insertError);
+          }
         }
         
         toast({
