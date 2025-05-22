@@ -7,6 +7,7 @@ import { PeerFormData, UsePeerManagementProps } from './types';
 import { findNextAvailableIP, validateIPFormat } from './peerUtils';
 import { generateKeys } from '@/services/mikrotik/utils';
 import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
+import logger from '@/services/loggerService';
 
 export const usePeerOperations = ({ 
   config, 
@@ -34,16 +35,20 @@ export const usePeerOperations = ({
   });
 
   const handleEdit = (peer: WireguardPeer) => {
+    logger.info('Editing peer:', peer);
     setSelectedPeer(peer);
+    
+    // Garantir que todos os campos estejam corretamente preenchidos
     setFormData({
       name: peer.name,
       interface: peer.interface,
-      allowedAddress: peer.allowedAddress,
-      endpoint: peer.endpoint || '',
-      endpointPort: peer.endpointPort || '51820',
-      publicKey: peer.publicKey,
+      allowedAddress: peer.allowedAddress || peer['allowed-address'] || '',
+      endpoint: peer.endpoint || peer['endpoint-address'] || '',
+      endpointPort: peer.endpointPort || peer['endpoint-port'] || '51820',
+      publicKey: peer.publicKey || peer['public-key'] || '',
       disabled: typeof peer.disabled === 'string' ? peer.disabled === 'true' : Boolean(peer.disabled)
     });
+    
     setIsEditing(true);
     setOpenDialog(true);
   };
@@ -54,20 +59,21 @@ export const usePeerOperations = ({
     // Get the default interface if available
     const defaultInterface = interfaces.length > 0 ? interfaces[0].name : '';
     
-    // Get the IP range from defaults (if available)
+    // Get the IP range from defaults
     const ipRange = defaults.allowedIpRange || '10.0.0.0/24';
     const baseNetwork = ipRange.split('/')[0].substring(0, ipRange.lastIndexOf('.'));
     
     // Generate the next available IP
     const nextIP = findNextAvailableIP(peers, baseNetwork);
     
-    // Validate that the IP has the correct format (all 4 octets)
+    // Validate IP format
     if (!validateIPFormat(nextIP)) {
       console.error('Generated IP has incorrect format:', nextIP);
       toast.error('Erro ao gerar endereço IP');
       return;
     }
     
+    // Usar as configurações padrão
     setFormData({
       name: '',
       interface: defaultInterface,
@@ -113,10 +119,15 @@ export const usePeerOperations = ({
           "allowed-address": formData.allowedAddress,
           "endpoint-address": formData.endpoint,
           "endpoint-port": formData.endpointPort,
-          disabled: formData.disabled ? "true" : "false"
+          "disabled": formData.disabled ? "true" : "false",
+          // Manter a chave pública original
+          "public-key": formData.publicKey || selectedPeer.publicKey || selectedPeer['public-key'] || ''
         };
         
+        logger.info('Updating peer with data:', peerData);
         await api.updatePeer(selectedPeer.id, peerData);
+        
+        // Atualizar a lista de peers
         setPeers(prev => prev.map(peer => 
           peer.id === selectedPeer.id ? { 
             ...peer, 
@@ -125,16 +136,18 @@ export const usePeerOperations = ({
             allowedAddress: formData.allowedAddress,
             endpoint: formData.endpoint,
             endpointPort: formData.endpointPort,
+            publicKey: peerData["public-key"],
             disabled: formData.disabled
           } : peer
         ));
+        
         toast.success('Peer atualizado com sucesso');
       } else {
-        // Generate WireGuard keypair
+        // Generate WireGuard keypair for new peer
         const keys = await generateKeys();
-        console.log('Generated WireGuard keys:', keys);
+        logger.info('Generated WireGuard keys for new peer');
         
-        // Preparar os dados para API no formato exato do exemplo da imagem
+        // Preparar os dados para API no formato correto
         const peerData = {
           "interface": formData.interface,
           "public-key": keys.publicKey,
@@ -146,10 +159,10 @@ export const usePeerOperations = ({
           "disabled": formData.disabled ? "true" : "false"
         };
         
-        console.log('Sending peer data to API:', peerData);
+        logger.info('Creating new peer with data:', peerData);
         const newPeer = await api.createPeer(peerData);
-        console.log('API response for peer creation:', newPeer);
         
+        // Adicionar o novo peer à lista
         setPeers(prev => [...prev, {
           ...newPeer,
           id: newPeer.id,

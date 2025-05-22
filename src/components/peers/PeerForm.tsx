@@ -45,7 +45,15 @@ const PeerForm = ({
       onChange('endpoint', defaults.endpoint);
       onChange('endpointPort', defaults.port || '51820');
     }
-  }, [defaults, isEditing, formData.endpoint, onChange]);
+    
+    // Garantir que o allowedAddress use o formato da configuração padrão
+    if (!isEditing && defaults.allowedIpRange && !formData.allowedAddress) {
+      // Obter a base da rede do allowedIpRange
+      const baseNetwork = defaults.allowedIpRange.split('/')[0].substring(0, defaults.allowedIpRange.lastIndexOf('.'));
+      const lastOctet = formData.allowedAddress?.split('.')?.pop()?.split('/')[0] || '1';
+      onChange('allowedAddress', `${baseNetwork}.${lastOctet}/32`);
+    }
+  }, [defaults, isEditing, formData.endpoint, formData.allowedAddress, onChange]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -69,6 +77,7 @@ const PeerForm = ({
               value={formData.name}
               onChange={(e) => onChange('name', e.target.value)}
               className="col-span-3 form-input"
+              placeholder="peer10"
             />
           </div>
 
@@ -102,8 +111,7 @@ const PeerForm = ({
               value={formData.allowedAddress}
               onChange={(e) => onChange('allowedAddress', e.target.value)}
               className="col-span-3 form-input"
-              readOnly={!isEditing}
-              title={!isEditing ? "Gerado automaticamente" : ""}
+              placeholder="10.0.0.1/32"
             />
           </div>
 
@@ -115,14 +123,14 @@ const PeerForm = ({
               id="endpoint"
               value={formData.endpoint}
               onChange={(e) => onChange('endpoint', e.target.value)}
-              placeholder={loading ? "Carregando..." : ""}
+              placeholder={loading ? "Carregando..." : defaults.endpoint}
               className="col-span-2 form-input"
             />
             <Input
               id="endpointPort"
               value={formData.endpointPort}
               onChange={(e) => onChange('endpointPort', e.target.value)}
-              placeholder="51820"
+              placeholder={defaults.port || "51820"}
               className="form-input"
             />
           </div>

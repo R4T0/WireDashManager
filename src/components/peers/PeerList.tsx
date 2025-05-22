@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/u
 import QRCodeDisplay from '@/components/qrcode/QRCodeDisplay';
 import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
 import { useQRCodeGeneration } from '@/hooks/qrcode/useQRCodeGeneration';
+import logger from '@/services/loggerService';
 
 interface PeerListProps {
   peers: WireguardPeer[];
@@ -32,6 +33,7 @@ const PeerList = ({ peers, loading, onEdit, onDelete, interfaces }: PeerListProp
   } = useQRCodeGeneration();
 
   const handleQrCodeClick = (peer: WireguardPeer) => {
+    logger.info('Generating QR code for peer:', peer);
     setSelectedPeer(peer);
     
     // Generate the QR code
@@ -101,12 +103,14 @@ const PeerList = ({ peers, loading, onEdit, onDelete, interfaces }: PeerListProp
         <TableBody>
           {peers.map((peer) => {
             const statusInfo = getStatusInfo(peer);
+            // Garantir que estamos utilizando os campos corretos, independente do formato
+            const peerAllowedAddress = peer.allowedAddress || peer['allowed-address'] || '';
             
             return (
               <TableRow key={peer.id}>
                 <TableCell className="font-medium">{peer.name}</TableCell>
                 <TableCell>{peer.interface}</TableCell>
-                <TableCell>{peer.allowedAddress}</TableCell>
+                <TableCell>{peerAllowedAddress}</TableCell>
                 <TableCell>
                   <span 
                     className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}
@@ -122,7 +126,7 @@ const PeerList = ({ peers, loading, onEdit, onDelete, interfaces }: PeerListProp
                     <Button variant="outline" size="sm" onClick={() => handleQrCodeClick(peer)}>
                       <QrCode className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => downloadConfig()}>
                       <DownloadCloud className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => onDelete(peer.id)}>
