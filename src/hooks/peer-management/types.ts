@@ -1,5 +1,5 @@
 
-import { MikrotikConfig } from '@/services/mikrotik/types';
+import { MikrotikConfig, WireguardInterface } from '@/services/mikrotik/types';
 
 export interface PeerFormData {
   name: string;

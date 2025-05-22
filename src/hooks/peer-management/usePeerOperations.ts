@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
 import MikrotikApi from '@/services/mikrotikService';
-import { WireguardPeer } from '@/services/mikrotik/types';
+import { WireguardPeer, WireguardInterface } from '@/services/mikrotik/types';
 import { PeerFormData, UsePeerManagementProps } from './types';
 import { findNextAvailableIP, validateIPFormat } from './peerUtils';
 import { generateKeys } from '@/services/mikrotik/utils';
@@ -16,7 +16,7 @@ export const usePeerOperations = ({
 }: UsePeerManagementProps & {
   peers: WireguardPeer[];
   setPeers: React.Dispatch<React.SetStateAction<WireguardPeer[]>>;
-  interfaces: string[];
+  interfaces: WireguardInterface[];
 }) => {
   const [selectedPeer, setSelectedPeer] = useState<WireguardPeer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -52,7 +52,7 @@ export const usePeerOperations = ({
     setSelectedPeer(null);
     
     // Get the default interface if available
-    const defaultInterface = interfaces.length > 0 ? interfaces[0] : '';
+    const defaultInterface = interfaces.length > 0 ? interfaces[0].name : '';
     
     // Get the IP range from defaults (if available)
     const ipRange = defaults.allowedIpRange || '10.0.0.0/24';

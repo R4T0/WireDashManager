@@ -64,7 +64,7 @@ const Peers = () => {
         isOpen={openDialog}
         onClose={() => setOpenDialog(false)}
         formData={formData}
-        interfaces={interfaces}
+        interfaces={interfaces.map(iface => iface.name)}
         isEditing={isEditing}
         onChange={handleChange}
         onSubmit={handleSubmit}
