@@ -84,11 +84,11 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
     }
   };
 
+  // Esta é a função única que lidará com a seleção de peers e geração do QR code
   const handlePeerSelect = (peerId: string) => {
-    const peer = peers.find(p => p['.id'] === peerId);
+    const peer = peerSearchSelectHandler(peerId);
     
     if (peer) {
-      setSelectedPeer(peer);
       logger.info(`Selected peer: ${peer.name}, interface: ${peer.interface}`);
       logger.debug(`Available interfaces:`, interfaces);
       
