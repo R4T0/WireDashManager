@@ -42,6 +42,27 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          isadmin: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          isadmin?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          isadmin?: boolean | null
+        }
+        Relationships: []
+      }
       wireguard_defaults: {
         Row: {
           allowed_ip_range: string | null

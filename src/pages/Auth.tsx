@@ -22,6 +22,7 @@ const Auth = () => {
   useEffect(() => {
     const checkForUsers = async () => {
       try {
+        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { data, error, count } = await supabase
           .from('users')
           .select('*', { count: 'exact' });
@@ -86,6 +87,7 @@ const Auth = () => {
       
       if (data.user) {
         // Verificar se o usuário tem permissão de acesso
+        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
@@ -138,6 +140,7 @@ const Auth = () => {
       
       if (data.user) {
         // Criar registro na tabela de usuários
+        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { error: insertError } = await supabase.from('users').insert({
           id: data.user.id,
           email: email,

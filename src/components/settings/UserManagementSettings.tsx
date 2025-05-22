@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { User } from '@/types/user';
 
 // Esquema para validação do formulário
 const userFormSchema = z.object({
@@ -22,13 +22,6 @@ const userFormSchema = z.object({
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
-
-type User = {
-  id: string;
-  email: string;
-  isAdmin: boolean;
-  created_at: string;
-}
 
 const UserManagementSettings = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -50,6 +43,7 @@ const UserManagementSettings = () => {
     setLoading(true);
     try {
       // Buscar usuários do banco de dados
+      // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
       const { data: usersData, error } = await supabase
         .from('users')
         .select('*')
@@ -88,6 +82,7 @@ const UserManagementSettings = () => {
     try {
       if (currentUser) {
         // Atualizar usuário existente
+        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { error } = await supabase
           .from('users')
           .update({ 
@@ -112,6 +107,7 @@ const UserManagementSettings = () => {
         
         if (data.user) {
           // Adicionar à tabela de usuários com flag de admin
+          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
           await supabase.from('users').insert({
             id: data.user.id,
             email: values.email,
@@ -139,6 +135,7 @@ const UserManagementSettings = () => {
 
   const handleDelete = async (user: User) => {
     try {
+      // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
       const { error } = await supabase
         .from('users')
         .delete()

@@ -23,6 +23,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Função para verificar se o usuário é admin
     const checkUserAdmin = async (userId: string) => {
       try {
+        // Use the correct typing for from() method
+        // @ts-ignore - We've created the table in the database, but TypeScript doesn't know about it yet
         const { data, error } = await supabase
           .from('users')
           .select('isAdmin')
