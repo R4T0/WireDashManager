@@ -3,7 +3,6 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MikrotikConnectionSettings from '@/components/settings/MikrotikConnectionSettings';
 import WireguardDefaultSettings from '@/components/settings/WireguardDefaultSettings';
-import UserManagementSettings from '@/components/settings/UserManagementSettings';
 import LogViewer from '@/components/debug/LogViewer';
 import SettingsHeader from '@/components/settings/SettingsHeader';
 import ConnectionDebugger from '@/components/debug/ConnectionDebugger';
@@ -17,7 +16,6 @@ const Settings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="mikrotik">Conexão Mikrotik</TabsTrigger>
           <TabsTrigger value="defaults">Configuração Padrão</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="logs">Logs do Sistema</TabsTrigger>
           <TabsTrigger value="debug">Diagnóstico</TabsTrigger>
         </TabsList>
@@ -28,10 +26,6 @@ const Settings = () => {
         
         <TabsContent value="defaults">
           <WireguardDefaultSettings />
-        </TabsContent>
-
-        <TabsContent value="usuarios">
-          <UserManagementSettings />
         </TabsContent>
         
         <TabsContent value="logs">
