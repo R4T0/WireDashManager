@@ -25,7 +25,7 @@ export const useQRCodeGeneration = () => {
     const interfaceObj = interfaces.find(iface => iface.name === peer.interface);
     const serverPublicKey = interfaceObj?.publicKey || '<PUBLIC-KEY-INTERFACE>';
     
-    // Use actual private key if available, otherwise use placeholder
+    // Use actual public key if available, otherwise use placeholder
     const publicKeyPeer = peer.publicKey || '<PUBLICK-KEY-PEER>';
     
     return `[Interface]
