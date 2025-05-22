@@ -19,7 +19,6 @@ export const usePeerForm = (peers: WireguardPeer[], interfaces: WireguardInterfa
     allowedAddress: '',
     endpoint: '',
     endpointPort: '51820',
-    persistentKeepalive: '25',
     disabled: false
   });
 
@@ -38,7 +37,6 @@ export const usePeerForm = (peers: WireguardPeer[], interfaces: WireguardInterfa
       allowedAddress: peer.allowedAddress || peer['allowed-address'] || '',
       endpoint: peer.endpoint || peer['endpoint-address'] || '',
       endpointPort: peer.endpointPort || peer['endpoint-port'] || '51820',
-      persistentKeepalive: peer.persistentKeepalive || peer['persistent-keepalive'] || '25',
       publicKey: peer.publicKey || peer['public-key'] || '',
       disabled: typeof peer.disabled === 'string' ? peer.disabled === 'true' : Boolean(peer.disabled)
     });
@@ -85,7 +83,6 @@ export const usePeerForm = (peers: WireguardPeer[], interfaces: WireguardInterfa
         allowedAddress: '10.0.0.2/32',
         endpoint: defaults.endpoint || '',
         endpointPort: defaults.port || '51820',
-        persistentKeepalive: '25',
         disabled: false
       });
       
@@ -101,7 +98,6 @@ export const usePeerForm = (peers: WireguardPeer[], interfaces: WireguardInterfa
         allowedAddress: nextIP,
         endpoint: defaults.endpoint || '',
         endpointPort: defaults.port || '51820',
-        persistentKeepalive: '25',
         disabled: false
       });
       
@@ -118,7 +114,6 @@ export const usePeerForm = (peers: WireguardPeer[], interfaces: WireguardInterfa
       allowedAddress: '',
       endpoint: '',
       endpointPort: '51820',
-      persistentKeepalive: '25',
       disabled: false
     });
   };

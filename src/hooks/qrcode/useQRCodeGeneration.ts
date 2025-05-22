@@ -46,7 +46,6 @@ export const useQRCodeGeneration = () => {
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
-    const persistentKeepalive = peer.persistentKeepalive || peer['persistent-keepalive'] || '25';
     
     // Generate a configuration following the WireGuard standard format
     return `[Interface]
@@ -58,7 +57,7 @@ DNS = ${defaults.dns}
 PublicKey = ${serverPublicKey}
 AllowedIPs = 0.0.0.0/0
 Endpoint = ${endpoint}:${endpointPort}
-PersistentKeepalive = ${persistentKeepalive}
+PersistentKeepalive = 25
 `;
   };
 

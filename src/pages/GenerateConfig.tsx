@@ -114,17 +114,16 @@ const GenerateConfig = () => {
       // Gerar chaves para o peer
       const keys = await generateKeys();
       const publicKey = keys.publicKey;
-      const privateKey = keys.privateKey;
 
-      // Criar o peer no router
+      // Criar o peer no router como no exemplo da imagem
       const peerData = {
         interface: formData.interface,
         "public-key": publicKey,
         "allowed-address": formData.allowedAddress,
-        "endpoint-address": formData.endpoint || "",
-        "endpoint-port": parseInt(formData.endpointPort) || 51820,
+        "endpoint-address": formData.endpoint,
+        "endpoint-port": parseInt(formData.endpointPort),
         name: formData.name,
-        "persistent-keepalive": parseInt(formData.persistentKeepalive) || 25,
+        "persistent-keepalive": parseInt(formData.persistentKeepalive),
         disabled: formData.disabled ? "true" : "false"
       };
       
@@ -140,10 +139,10 @@ const GenerateConfig = () => {
       // Criar o peer com a chave privada para gerar o QR Code
       const peerWithPrivateKey = {
         ...createdPeer,
-        privateKey: privateKey
+        privateKey: keys.privateKey
       };
       
-      // Gerar configuração usando a mesma lógica que é usada na tela QR Code e Peers
+      // Gerar configuração usando a mesma lógica da tela QR Code
       const configContent = generateSampleConfig(peerWithPrivateKey, defaults, interfaces);
       
       // Gerar QR code
