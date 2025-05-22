@@ -159,6 +159,7 @@ class MikrotikApi {
       endpoint: peer['endpoint-address'],
       endpointPort: peer['endpoint-port'],
       publicKey: peer['public-key'],
+      privateKey: peer['private-key'] || '', // Map the private key when available
       disabled: peer.disabled,
     }));
   }

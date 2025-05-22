@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
-import { WireguardPeer } from '@/services/mikrotik/types';
+import { WireguardPeer, WireguardInterface } from '@/services/mikrotik/types';
 import logger from '@/services/loggerService';
 import { usePeerSearch } from './qrcode/usePeerSearch';
 import { useQRCodeGeneration } from './qrcode/useQRCodeGeneration';
@@ -15,6 +15,7 @@ interface UseQRCodeProps {
 
 export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProps) => {
   const [loading, setLoading] = useState(true);
+  const [interfaces, setInterfaces] = useState<WireguardInterface[]>([]);
   
   const { defaults } = useWireGuardDefaults();
   
@@ -41,14 +42,14 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
 
   useEffect(() => {
     if (isConnected) {
-      logger.info("Connection is active, fetching peers");
-      fetchPeers();
+      logger.info("Connection is active, fetching peers and interfaces");
+      fetchData();
     } else {
       logger.info("Not connected to router, testing connection");
       testConnection().then(connected => {
         if (connected) {
-          logger.info("Connection test successful, fetching peers");
-          fetchPeers();
+          logger.info("Connection test successful, fetching data");
+          fetchData();
         } else {
           logger.warn("Connection test failed");
         }
@@ -56,18 +57,24 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
     }
   }, [isConnected]);
 
-  const fetchPeers = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      logger.info("Importing mikrotikService and fetching peers");
+      logger.info("Importing mikrotikService and fetching data");
       const api = new (await import('@/services/mikrotikService')).default(config);
-      logger.info("API initialized, getting peers");
-      const peersData = await api.getPeers();
-      logger.info(`Received ${peersData.length} peers from API`, peersData);
+      
+      logger.info("API initialized, getting peers and interfaces");
+      const [peersData, interfacesData] = await Promise.all([
+        api.getPeers(),
+        api.getInterfaces()
+      ]);
+      
+      logger.info(`Received ${peersData.length} peers and ${interfacesData.length} interfaces from API`);
       setPeers(peersData);
+      setInterfaces(interfacesData);
     } catch (error) {
-      logger.error('Failed to fetch peers:', error);
-      toast.error('Falha ao carregar peers do roteador');
+      logger.error('Failed to fetch data:', error);
+      toast.error('Falha ao carregar dados do roteador');
     } finally {
       setLoading(false);
     }
@@ -76,8 +83,8 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   const handlePeerSelect = (peerId: string) => {
     const peer = selectPeer(peerId);
     if (peer) {
-      // Generate a sample config
-      const sampleConfig = generateSampleConfig(peer, defaults);
+      // Generate a config with the actual keys
+      const sampleConfig = generateSampleConfig(peer, defaults, interfaces);
       setConfigText(sampleConfig);
       handleGenerateQRCode(sampleConfig);
     }

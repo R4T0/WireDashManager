@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
 import logger from '@/services/loggerService';
-import { WireguardPeer } from '@/services/mikrotik/types';
+import { WireguardPeer, WireguardInterface } from '@/services/mikrotik/types';
 
 export interface QRCodeDefaults {
   endpoint: string;
@@ -15,19 +15,26 @@ export const useQRCodeGeneration = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [configText, setConfigText] = useState('');
   
-  const generateSampleConfig = (peer: WireguardPeer, defaults: QRCodeDefaults) => {
+  const generateSampleConfig = (peer: WireguardPeer, defaults: QRCodeDefaults, interfaces: WireguardInterface[] = []) => {
     logger.info(`Generating config for peer: ${peer.name}`, {
       peer,
       defaults
     });
     
+    // Find the matching interface to get its public key
+    const interfaceObj = interfaces.find(iface => iface.name === peer.interface);
+    const serverPublicKey = interfaceObj?.publicKey || '<server_public_key_would_be_here>';
+    
+    // Use actual private key if available, otherwise use placeholder
+    const privateKey = peer.privateKey || '<private_key_would_be_here>';
+    
     return `[Interface]
-PrivateKey = <private_key_would_be_here>
+PrivateKey = ${privateKey}
 Address = ${peer.allowedAddress}
 DNS = ${defaults.dns}
 
 [Peer]
-PublicKey = <server_public_key_would_be_here>
+PublicKey = ${serverPublicKey}
 AllowedIPs = 0.0.0.0/0, ::/0
 Endpoint = ${peer.endpoint || defaults.endpoint}:${peer.endpointPort || defaults.port}
 `;

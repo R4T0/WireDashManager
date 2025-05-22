@@ -32,6 +32,7 @@ export interface WireguardPeer {
   endpoint: string;
   endpointPort: string;
   publicKey: string;
+  privateKey?: string;
   presharedKey?: string;
   disabled: boolean;
   persistentKeepalive?: string;
