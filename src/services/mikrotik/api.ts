@@ -164,8 +164,18 @@ class MikrotikApi {
   }
 
   public async createPeer(peerData: any): Promise<WireguardPeer> {
-    return this.makeRequest<any>('/interface/wireguard/peers', 'PUT', peerData)
+    console.log('Creating peer with data:', peerData);
+    // Make sure endpoint is set to exactly match the expected format from the image example
+    const peerDataToSend = {
+      ...peerData,
+      // Add any missing required fields from the example that might not be set
+      "persistent-keepalive": peerData["persistent-keepalive"] || "25"
+    };
+    
+    // The URL should match exactly /rest/interface/wireguard/peers/add from the image
+    return this.makeRequest<any>('/interface/wireguard/peers', 'PUT', peerDataToSend)
       .then(response => {
+        console.log('Peer created, API response:', response);
         const id = response['.id'] || String(Date.now());
         return {
           id,

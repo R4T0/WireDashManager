@@ -17,13 +17,23 @@ export const createAuthHeader = (username: string, password: string): string => 
 // Generate WireGuard keypair
 export const generateKeys = async (): Promise<{privateKey: string, publicKey: string}> => {
   // In a real app, we would call a backend service for this
-  // For simulation, we'll return mock keys
+  // For simulation, we'll return mock keys that match the WireGuard format
   logger.info('Generating WireGuard keypair');
   await new Promise(resolve => setTimeout(resolve, 800));
   
+  // Generate a fake but properly formatted WireGuard public key (base64 encoded, 32 bytes = 44 chars with padding)
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let publicKey = '';
+  for (let i = 0; i < 43; i++) {
+    publicKey += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  publicKey += '='; // WireGuard keys typically end with = padding
+  
+  const privateKey = 'PRIVATE_KEY_' + Math.random().toString(36).substring(2, 10);
+  
   const keys = {
-    privateKey: 'PRIVATE_KEY_' + Math.random().toString(36).substring(2, 10),
-    publicKey: 'PUBLIC_KEY_' + Math.random().toString(36).substring(2, 10),
+    privateKey,
+    publicKey,
   };
   
   logger.info('Generated keypair', { publicKey: keys.publicKey });

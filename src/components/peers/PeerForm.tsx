@@ -102,6 +102,8 @@ const PeerForm = ({
               value={formData.allowedAddress}
               onChange={(e) => onChange('allowedAddress', e.target.value)}
               className="col-span-3 form-input"
+              readOnly={!isEditing}
+              title={!isEditing ? "Gerado automaticamente" : ""}
             />
           </div>
 
@@ -136,6 +138,17 @@ const PeerForm = ({
                 readOnly
                 className="col-span-3 form-input bg-wireguard-muted/50"
               />
+            </div>
+          )}
+
+          {!isEditing && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
+                Chave Pública
+              </Label>
+              <div className="col-span-3 text-sm text-muted-foreground">
+                Será gerada automaticamente ao criar o peer
+              </div>
             </div>
           )}
 

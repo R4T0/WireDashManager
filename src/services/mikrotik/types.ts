@@ -34,6 +34,7 @@ export interface WireguardPeer {
   publicKey: string;
   presharedKey?: string;
   disabled: boolean | string;
+  persistentKeepalive?: string;
   // Adicionando propriedades com kebab-case para compatibilidade com a API
   [key: string]: any;
 }

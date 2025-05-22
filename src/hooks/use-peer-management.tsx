@@ -75,16 +75,45 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     setOpenDialog(true);
   };
 
+  // Function to find the next available IP address
+  const findNextAvailableIP = (baseNetwork: string = '10.10.0'): string => {
+    // Extract used IPs from existing peers with same network
+    const usedIPs = peers
+      .map(peer => peer.allowedAddress)
+      .filter(addr => addr.startsWith(baseNetwork))
+      .map(addr => {
+        const parts = addr.split('/');
+        const ip = parts[0];
+        return parseInt(ip.split('.').pop() || '0', 10);
+      });
+
+    // Find the next available number
+    let nextNum = 2; // Start from .2 (typically .1 is for gateway)
+    while (usedIPs.includes(nextNum)) {
+      nextNum++;
+    }
+
+    return `${baseNetwork}.${nextNum}/32`;
+  };
+
   const handleAdd = () => {
     setSelectedPeer(null);
+    
+    // Get the default interface if available
+    const defaultInterface = interfaces.length > 0 ? interfaces[0] : '';
+    
+    // Generate the next available IP
+    const nextIP = findNextAvailableIP();
+    
     setFormData({
       name: '',
-      interface: interfaces.length > 0 ? interfaces[0] : '',
-      allowedAddress: '10.0.0.0/32',
+      interface: defaultInterface,
+      allowedAddress: nextIP,
       endpoint: '',
       endpointPort: '51820',
       disabled: false
     });
+    
     setIsEditing(false);
     setOpenDialog(true);
   };
@@ -113,17 +142,17 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
     try {
       const api = new MikrotikApi(config);
       
-      // Preparar os dados para API no formato correto
-      const peerData = {
-        name: formData.name,
-        interface: formData.interface,
-        "allowed-address": formData.allowedAddress,
-        "endpoint-address": formData.endpoint,
-        "endpoint-port": formData.endpointPort,
-        disabled: formData.disabled
-      };
-
       if (isEditing && selectedPeer) {
+        // Preparar os dados para API no formato correto
+        const peerData = {
+          name: formData.name,
+          interface: formData.interface,
+          "allowed-address": formData.allowedAddress,
+          "endpoint-address": formData.endpoint,
+          "endpoint-port": formData.endpointPort,
+          disabled: formData.disabled ? "true" : "false"
+        };
+        
         await api.updatePeer(selectedPeer.id, peerData);
         setPeers(prev => prev.map(peer => 
           peer.id === selectedPeer.id ? { 
@@ -138,14 +167,26 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
         ));
         toast.success('Peer atualizado com sucesso');
       } else {
-        // Para novos peers, gerar uma chave pública
+        // Generate WireGuard keypair
         const keys = await generateKeys();
-        const newPeerData = {
-          ...peerData,
-          "public-key": keys.publicKey
+        console.log('Generated WireGuard keys:', keys);
+        
+        // Preparar os dados para API no formato exato do exemplo da imagem
+        const peerData = {
+          "interface": formData.interface,
+          "public-key": keys.publicKey,
+          "allowed-address": formData.allowedAddress,
+          "endpoint-address": formData.endpoint || "",
+          "endpoint-port": formData.endpointPort,
+          "name": formData.name,
+          "persistent-keepalive": "25",
+          "disabled": formData.disabled ? "true" : "false"
         };
         
-        const newPeer = await api.createPeer(newPeerData);
+        console.log('Sending peer data to API:', peerData);
+        const newPeer = await api.createPeer(peerData);
+        console.log('API response for peer creation:', newPeer);
+        
         setPeers(prev => [...prev, {
           ...newPeer,
           id: newPeer.id,
@@ -157,6 +198,7 @@ export const usePeerManagement = (config: MikrotikConfig, isConnected: boolean, 
           publicKey: keys.publicKey,
           disabled: formData.disabled
         } as WireguardPeer]);
+        
         toast.success('Peer criado com sucesso');
       }
       
