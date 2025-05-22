@@ -53,21 +53,24 @@ export const usePeerOperations = ({
     try {
       let success = false;
       
+      // Criar uma cópia do formData para modificação
+      const formDataCopy = { ...formData };
+      
       // Converter dados do formulário conforme necessário
       const peerData = {
-        ...formData,
-        "public-key": formData.publicKey,
-        "allowed-address": formData.allowedAddress,
-        "endpoint-address": formData.endpoint || "",
-        "endpoint-port": formData.endpointPort ? parseInt(formData.endpointPort) : 0,
-        "persistent-keepalive": formData.persistentKeepalive ? parseInt(formData.persistentKeepalive) : 25,
-        disabled: formData.disabled ? "true" : "false"
+        ...formDataCopy,
+        "public-key": formDataCopy.publicKey,
+        "allowed-address": formDataCopy.allowedAddress,
+        "endpoint-address": formDataCopy.endpoint || "",
+        "endpoint-port": formDataCopy.endpointPort ? parseInt(formDataCopy.endpointPort) : 0,
+        "persistent-keepalive": formDataCopy.persistentKeepalive ? parseInt(formDataCopy.persistentKeepalive) : 25,
+        disabled: formDataCopy.disabled ? "true" : "false"
       };
       
       if (isEditing && selectedPeer) {
-        success = await updatePeer(selectedPeer.id, peerData);
+        success = await updatePeer(selectedPeer.id, formDataCopy);
       } else {
-        success = await createPeer(peerData);
+        success = await createPeer(formDataCopy);
       }
       
       if (success) {

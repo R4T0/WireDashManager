@@ -27,7 +27,7 @@ export const usePeerCrud = (
         "endpoint-address": formData.endpoint || "",
         "endpoint-port": formData.endpointPort,
         "name": formData.name,
-        "persistent-keepalive": "25",
+        "persistent-keepalive": formData.persistentKeepalive || "25",
         "disabled": formData.disabled ? "true" : "false"
       };
       
@@ -44,6 +44,7 @@ export const usePeerCrud = (
         endpoint: formData.endpoint,
         endpointPort: formData.endpointPort,
         publicKey: keys.publicKey,
+        persistentKeepalive: formData.persistentKeepalive,
         disabled: formData.disabled
       } as WireguardPeer]);
       
@@ -67,6 +68,7 @@ export const usePeerCrud = (
         "allowed-address": formData.allowedAddress,
         "endpoint-address": formData.endpoint,
         "endpoint-port": formData.endpointPort,
+        "persistent-keepalive": formData.persistentKeepalive || "25",
         "disabled": formData.disabled ? "true" : "false",
         // Manter a chave pública original
         "public-key": formData.publicKey || ''
@@ -84,6 +86,7 @@ export const usePeerCrud = (
           allowedAddress: formData.allowedAddress,
           endpoint: formData.endpoint,
           endpointPort: formData.endpointPort,
+          persistentKeepalive: formData.persistentKeepalive,
           publicKey: peerData["public-key"],
           disabled: formData.disabled
         } : peer
