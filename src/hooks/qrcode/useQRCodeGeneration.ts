@@ -38,19 +38,19 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // Para a seção [Interface] do cliente, usamos a chave pública do peer
-    // Em uma implementação real, a chave privada do cliente seria gerada e fornecida aqui
-    // Como não temos acesso à chave privada no UI, usamos a informação disponível
-    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
+    // For the client's [Interface] section, we should use the peer's private key
+    // But since we don't have access to it in the UI, we use what we have
+    // In a real implementation, the private key should be generated securely
+    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PRIVATE-KEY-WOULD-GO-HERE>';
     
-    // Obtém valores do peer ou usa os defaults
+    // Get values from peer or use defaults
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
     
-    // Gera uma configuração compatível com o formato WireGuard
+    // Generate a configuration following the WireGuard standard format
     return `[Interface]
-PrivateKey = ${peerPublicKey}
+PrivateKey = <PRIVATE-KEY-WOULD-GO-HERE>
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
 
