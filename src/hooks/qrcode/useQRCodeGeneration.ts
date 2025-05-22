@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
@@ -38,10 +37,9 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // For the client's [Interface] section, we should use the peer's private key
-    // But since we don't have access to it in the UI, we use what we have
-    // In a real implementation, the private key should be generated securely
-    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PRIVATE-KEY-WOULD-GO-HERE>';
+    // For the client's [Interface] section, we use the peer's public key
+    // This is the correct key to use in the WireGuard configuration
+    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
     
     // Get values from peer or use defaults
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
@@ -50,7 +48,7 @@ export const useQRCodeGeneration = () => {
     
     // Generate a configuration following the WireGuard standard format
     return `[Interface]
-PrivateKey = <PRIVATE-KEY-WOULD-GO-HERE>
+PrivateKey = ${peerPublicKey}
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
 
