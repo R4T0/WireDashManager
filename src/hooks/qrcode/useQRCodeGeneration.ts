@@ -23,20 +23,20 @@ export const useQRCodeGeneration = () => {
     
     // Find the matching interface to get its public key
     const interfaceObj = interfaces.find(iface => iface.name === peer.interface);
-    const serverPublicKey = interfaceObj?.publicKey || '<server_public_key_would_be_here>';
+    const serverPublicKey = interfaceObj?.publicKey || '<PUBLIC-KEY-INTERFACE>';
     
     // Use actual private key if available, otherwise use placeholder
-    const privateKey = peer.privateKey || '<private_key_would_be_here>';
+    const publicKeyPeer = peer.publicKey || '<PUBLICK-KEY-PEER>';
     
     return `[Interface]
-PrivateKey = ${privateKey}
 Address = ${peer.allowedAddress}
 DNS = ${defaults.dns}
+PublicKey = ${publicKeyPeer}
 
 [Peer]
-PublicKey = ${serverPublicKey}
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 0.0.0.0/0
 Endpoint = ${peer.endpoint || defaults.endpoint}:${peer.endpointPort || defaults.port}
+PublicKey = ${serverPublicKey}
 `;
   };
 
