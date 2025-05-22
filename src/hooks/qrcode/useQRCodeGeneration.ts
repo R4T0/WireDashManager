@@ -9,7 +9,7 @@ export interface QRCodeDefaults {
   endpoint: string;
   port: string;
   dns: string;
-  allowedIpRange: string; // Added this missing property
+  allowedIpRange: string;
 }
 
 export const useQRCodeGeneration = () => {
@@ -38,24 +38,26 @@ export const useQRCodeGeneration = () => {
     const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
-    // For the client config, we need the peer's private key in the [Interface] section
-    // However, the UI only shows the public key, so we'll use that for now
-    // In a real implementation, the private key should be securely stored and accessed
-    const publicKeyPeer = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
+    // Para a seção [Interface] do cliente, usamos a chave pública do peer
+    // Em uma implementação real, a chave privada do cliente seria gerada e fornecida aqui
+    // Como não temos acesso à chave privada no UI, usamos a informação disponível
+    const peerPublicKey = peer.publicKey || peer['public-key'] || '<PUBLIC-KEY-PEER>';
     
+    // Obtém valores do peer ou usa os defaults
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
     
+    // Gera uma configuração compatível com o formato WireGuard
     return `[Interface]
-PrivateKey = ${publicKeyPeer}
+PrivateKey = ${peerPublicKey}
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
 
 [Peer]
+PublicKey = ${serverPublicKey}
 AllowedIPs = 0.0.0.0/0
 Endpoint = ${endpoint}:${endpointPort}
-PublicKey = ${serverPublicKey}
 PersistentKeepalive = 25
 `;
   };
@@ -66,6 +68,7 @@ PersistentKeepalive = 25
       const qrCode = await generateQRCode(config);
       logger.debug("QR code generated successfully");
       setQrCodeUrl(qrCode);
+      setConfigText(config);
     } catch (error) {
       logger.error('Failed to generate QR code:', error);
       toast.error('Falha ao gerar QR Code');
