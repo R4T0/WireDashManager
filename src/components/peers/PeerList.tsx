@@ -126,9 +126,6 @@ const PeerList = ({ peers, loading, onEdit, onDelete, interfaces }: PeerListProp
                     <Button variant="outline" size="sm" onClick={() => handleQrCodeClick(peer)}>
                       <QrCode className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => downloadConfig()}>
-                      <DownloadCloud className="h-4 w-4" />
-                    </Button>
                     <Button variant="outline" size="sm" onClick={() => onDelete(peer.id)}>
                       <Trash className="h-4 w-4" />
                     </Button>
