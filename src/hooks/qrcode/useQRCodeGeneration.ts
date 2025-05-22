@@ -18,14 +18,22 @@ export const useQRCodeGeneration = () => {
   const generateSampleConfig = (peer: WireguardPeer, defaults: QRCodeDefaults, interfaces: WireguardInterface[] = []) => {
     logger.info(`Generating config for peer: ${peer.name}`, {
       peer,
-      defaults
+      defaults,
+      interfaces
     });
     
     // Find the matching interface to get its public key
     const interfaceObj = interfaces.find(iface => iface.name === peer.interface);
-    const serverPublicKey = interfaceObj?.publicKey || '<PUBLIC-KEY-INTERFACE>';
     
-    // Use actual public key if available, otherwise use placeholder
+    if (!interfaceObj) {
+      logger.warn(`Interface "${peer.interface}" not found for peer "${peer.name}"`);
+    }
+    
+    // Get the interface's public key for the [Peer] section
+    const serverPublicKey = interfaceObj?.publicKey || '<PUBLIC-KEY-INTERFACE>';
+    logger.debug(`Server public key: ${serverPublicKey}`);
+    
+    // Use peer's public key for the [Interface] section
     const publicKeyPeer = peer.publicKey || '<PUBLICK-KEY-PEER>';
     
     return `[Interface]

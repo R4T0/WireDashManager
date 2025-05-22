@@ -72,6 +72,9 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
       logger.info(`Received ${peersData.length} peers and ${interfacesData.length} interfaces from API`);
       setPeers(peersData);
       setInterfaces(interfacesData);
+      
+      // Log the interfaces data to verify we're getting the public keys
+      logger.debug("Interfaces data:", interfacesData);
     } catch (error) {
       logger.error('Failed to fetch data:', error);
       toast.error('Falha ao carregar dados do roteador');
@@ -83,8 +86,18 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   const handlePeerSelect = (peerId: string) => {
     const peer = selectPeer(peerId);
     if (peer) {
-      // Generate a config with the actual keys
+      logger.info(`Selected peer: ${peer.name}, interface: ${peer.interface}`);
+      logger.debug(`Available interfaces:`, interfaces);
+      
+      // Find the interface to log its data
+      const matchingInterface = interfaces.find(iface => iface.name === peer.interface);
+      logger.debug(`Matching interface for peer:`, matchingInterface);
+      
+      // Generate config with actual interface data
       const sampleConfig = generateSampleConfig(peer, defaults, interfaces);
+      logger.info(`Generated config for peer ${peer.name}`);
+      logger.debug(`Config content:`, sampleConfig);
+      
       setConfigText(sampleConfig);
       handleGenerateQRCode(sampleConfig);
     }
