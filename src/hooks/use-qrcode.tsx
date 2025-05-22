@@ -27,7 +27,7 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
     setSelectedPeer,
     searchQuery, 
     setSearchQuery, 
-    handlePeerSelect 
+    handlePeerSelect: peerSearchSelectHandler 
   } = usePeerSearch();
   
   const { 
