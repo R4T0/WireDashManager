@@ -53,10 +53,21 @@ export const usePeerOperations = ({
     try {
       let success = false;
       
+      // Converter dados do formulário conforme necessário
+      const peerData = {
+        ...formData,
+        "public-key": formData.publicKey,
+        "allowed-address": formData.allowedAddress,
+        "endpoint-address": formData.endpoint || "",
+        "endpoint-port": formData.endpointPort ? parseInt(formData.endpointPort) : 0,
+        "persistent-keepalive": formData.persistentKeepalive ? parseInt(formData.persistentKeepalive) : 25,
+        disabled: formData.disabled ? "true" : "false"
+      };
+      
       if (isEditing && selectedPeer) {
-        success = await updatePeer(selectedPeer.id, formData);
+        success = await updatePeer(selectedPeer.id, peerData);
       } else {
-        success = await createPeer(formData);
+        success = await createPeer(peerData);
       }
       
       if (success) {

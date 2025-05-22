@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useMikrotik } from '@/contexts/mikrotik';
-import MikrotikApi, { generateKeys, generateWireguardConfig, NewPeerConfig } from '@/services/mikrotikService';
-import { generateQRCode, saveQRCodeAsImage } from '@/services/qrCodeService';
+import MikrotikApi, { generateKeys } from '@/services/mikrotikService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,25 +10,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
 import { DownloadCloud, FileText, QrCode } from 'lucide-react';
+import { useQRCodeGeneration } from '@/hooks/qrcode/useQRCodeGeneration';
+import { useWireGuardDefaults } from '@/hooks/qrcode/useWireGuardDefaults';
+import logger from '@/services/loggerService';
+import NotConnected from '@/components/peers/NotConnected';
+
+// Interface para o formulário
+interface FormData {
+  name: string;
+  interface: string;
+  allowedAddress: string;
+  endpoint: string;
+  endpointPort: string;
+  publicKey: string;
+  persistentKeepalive: string;
+  disabled: boolean;
+}
 
 const GenerateConfig = () => {
   const { config, isConnected, testConnection } = useMikrotik();
-  const [interfaces, setInterfaces] = useState<string[]>([]);
+  const [interfaces, setInterfaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [configGenerated, setConfigGenerated] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [configFile, setConfigFile] = useState<string | null>(null);
+  const { defaults } = useWireGuardDefaults();
 
-  // Form state
-  const [formData, setFormData] = useState<NewPeerConfig>({
+  // Utiliza o mesmo hook useQRCodeGeneration usado na tela QR Code
+  const {
+    qrCodeUrl,
+    configText,
+    generateSampleConfig,
+    handleGenerateQRCode,
+    handleDownloadQrCode,
+    handleDownloadConfig,
+  } = useQRCodeGeneration();
+
+  // Form state - com valores padrão
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     interface: '',
+    allowedAddress: '10.0.0.2/32',
     endpoint: '',
     endpointPort: '51820',
-    allowedAddress: '10.0.0.2/32',
-    clientDns: '1.1.1.1',
-    clientEndpoint: '0.0.0.0',
+    publicKey: '',
+    persistentKeepalive: '25',
+    disabled: false
   });
 
   useEffect(() => {
@@ -40,12 +64,23 @@ const GenerateConfig = () => {
     }
   }, [isConnected]);
 
+  useEffect(() => {
+    // Quando os defaults forem carregados, atualizar o formulário
+    if (defaults) {
+      setFormData(prev => ({
+        ...prev,
+        endpoint: defaults.endpoint || prev.endpoint,
+        endpointPort: defaults.port || prev.endpointPort
+      }));
+    }
+  }, [defaults]);
+
   const fetchInterfaces = async () => {
     setLoading(true);
     try {
       const api = new MikrotikApi(config);
       const interfacesData = await api.getInterfaces();
-      setInterfaces(interfacesData.map(i => i.name));
+      setInterfaces(interfacesData);
       
       // Pre-fill form with first interface if available
       if (interfacesData.length > 0) {
@@ -68,9 +103,6 @@ const GenerateConfig = () => {
 
   const handleGenerate = async () => {
     setGenerating(true);
-    setConfigGenerated(false);
-    setQrCodeUrl(null);
-    setConfigFile(null);
     
     try {
       // Validate required fields
@@ -78,45 +110,45 @@ const GenerateConfig = () => {
         toast.error('Por favor, preencha todos os campos obrigatórios');
         return;
       }
-      
-      // In a real app, this would:
-      // 1. Generate WireGuard keys
-      // 2. Get the server's public key
-      // 3. Create the peer on the router
-      // 4. Generate the config file
-      
-      // For this demo, we'll simulate these steps
-      
-      // 1. Generate keys
+
+      // Gerar chaves para o peer
       const keys = await generateKeys();
-      
-      // 2. Simulate getting server public key
-      const serverPublicKey = 'SERVER_PUBLIC_KEY_' + Math.random().toString(36).substring(2, 10);
-      
-      // 3. Simulate creating peer (in real app this would use the API)
-      
-      // 4. Generate config file
-      const configContent = generateWireguardConfig({
+      const publicKey = keys.publicKey;
+
+      // Criar o peer no router como no exemplo da imagem
+      const peerData = {
         interface: formData.interface,
-        privateKey: keys.privateKey,
-        publicKey: keys.publicKey,
-        address: formData.allowedAddress,
-        dns: formData.clientDns,
-        endpoint: formData.endpoint,
-        endpointPort: formData.endpointPort,
-        allowedIps: '0.0.0.0/0, ::/0',
-        serverPublicKey: serverPublicKey
-      });
+        "public-key": publicKey,
+        "allowed-address": formData.allowedAddress,
+        "endpoint-address": formData.endpoint,
+        "endpoint-port": parseInt(formData.endpointPort),
+        name: formData.name,
+        "persistent-keepalive": parseInt(formData.persistentKeepalive),
+        disabled: formData.disabled ? "true" : "false"
+      };
       
-      // Generate QR code
-      const qrCode = await generateQRCode(configContent);
+      logger.info('Creating peer with data:', peerData);
       
-      // Update state with results
-      setConfigFile(configContent);
-      setQrCodeUrl(qrCode);
-      setConfigGenerated(true);
+      const api = new MikrotikApi(config);
+      const createdPeer = await api.createPeer(peerData);
       
-      toast.success('Configuração gerada com sucesso');
+      if (!createdPeer) {
+        throw new Error('Falha ao criar peer no roteador');
+      }
+      
+      // Criar o peer com a chave privada para gerar o QR Code
+      const peerWithPrivateKey = {
+        ...createdPeer,
+        privateKey: keys.privateKey
+      };
+      
+      // Gerar configuração usando a mesma lógica da tela QR Code
+      const configContent = generateSampleConfig(peerWithPrivateKey, defaults, interfaces);
+      
+      // Gerar QR code
+      await handleGenerateQRCode(configContent);
+      
+      toast.success('Peer criado e configuração gerada com sucesso');
     } catch (error) {
       console.error('Failed to generate config:', error);
       toast.error('Falha ao gerar configuração');
@@ -125,50 +157,13 @@ const GenerateConfig = () => {
     }
   };
 
-  const handleDownloadConfig = () => {
-    if (!configFile) return;
-    
-    // Create a blob with the config content
-    const blob = new Blob([configFile], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create a link element and trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${formData.name}.conf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up
-    URL.revokeObjectURL(url);
-    
-    toast.success('Arquivo de configuração baixado');
-  };
-
-  const handleDownloadQrCode = () => {
-    if (!qrCodeUrl) return;
-    
-    // In a real app, this would save the QR code image
-    // For this demo, we'll just open the QR code URL in a new tab
-    saveQRCodeAsImage(qrCodeUrl, `${formData.name}-qrcode.png`);
-  };
-
   if (!isConnected) {
-    return (
-      <div className="text-center py-10">
-        <h2 className="text-xl font-semibold mb-4">Não conectado ao roteador</h2>
-        <p className="text-wireguard-muted-foreground mb-6">
-          Por favor, configure a conexão com o roteador Mikrotik primeiro.
-        </p>
-        <Button onClick={() => testConnection()}>Conectar</Button>
-      </div>
-    );
+    return <NotConnected onConnect={testConnection} />;
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Generate Config</h1>
+      <h1 className="text-2xl font-bold mb-6">Gerar Configuração</h1>
       <p className="text-wireguard-muted-foreground mb-6">
         Crie uma configuração WireGuard para um novo cliente
       </p>
@@ -208,8 +203,8 @@ const GenerateConfig = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {interfaces.map((iface) => (
-                          <SelectItem key={iface} value={iface}>
-                            {iface}
+                          <SelectItem key={iface.name} value={iface.name}>
+                            {iface.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -258,29 +253,14 @@ const GenerateConfig = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clientDns">
-                      Client DNS
+                    <Label htmlFor="persistentKeepalive">
+                      Persistent Keepalive
                     </Label>
                     <Input
-                      id="clientDns"
-                      placeholder="1.1.1.1"
-                      value={formData.clientDns}
-                      onChange={(e) => handleChange('clientDns', e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="clientEndpoint">
-                      Client Endpoint
-                    </Label>
-                    <Input
-                      id="clientEndpoint"
-                      placeholder="0.0.0.0"
-                      value={formData.clientEndpoint}
-                      onChange={(e) => handleChange('clientEndpoint', e.target.value)}
+                      id="persistentKeepalive"
+                      placeholder="25"
+                      value={formData.persistentKeepalive}
+                      onChange={(e) => handleChange('persistentKeepalive', e.target.value)}
                       className="form-input"
                     />
                   </div>
@@ -306,7 +286,7 @@ const GenerateConfig = () => {
               <CardTitle>Configuração</CardTitle>
             </CardHeader>
             <CardContent>
-              {configGenerated ? (
+              {qrCodeUrl ? (
                 <div className="space-y-6">
                   <Tabs defaultValue="qrcode">
                     <TabsList className="grid w-full grid-cols-2">
@@ -316,19 +296,16 @@ const GenerateConfig = () => {
                     
                     <TabsContent value="qrcode" className="pt-4">
                       <div className="flex flex-col items-center space-y-4">
-                        {qrCodeUrl && (
-                          <div className="bg-white p-3 rounded-lg">
-                            <img 
-                              src={qrCodeUrl} 
-                              alt="WireGuard QR Code" 
-                              className="w-48 h-48"
-                            />
-                          </div>
-                        )}
+                        <div className="bg-white p-3 rounded-lg">
+                          <img 
+                            src={qrCodeUrl} 
+                            alt="WireGuard QR Code" 
+                            className="w-48 h-48"
+                          />
+                        </div>
                         
                         <Button
-                          onClick={handleDownloadQrCode}
-                          disabled={!qrCodeUrl}
+                          onClick={() => handleDownloadQrCode(qrCodeUrl, { name: formData.name } as any)}
                           variant="outline"
                           className="w-full"
                         >
@@ -341,14 +318,11 @@ const GenerateConfig = () => {
                     <TabsContent value="file" className="pt-4">
                       <div className="space-y-4">
                         <div className="bg-wireguard p-3 rounded-md text-xs font-mono overflow-auto max-h-48">
-                          {configFile && (
-                            <pre>{configFile}</pre>
-                          )}
+                          <pre>{configText}</pre>
                         </div>
                         
                         <Button
-                          onClick={handleDownloadConfig}
-                          disabled={!configFile}
+                          onClick={() => handleDownloadConfig(configText, { name: formData.name } as any)}
                           variant="outline"
                           className="w-full"
                         >
