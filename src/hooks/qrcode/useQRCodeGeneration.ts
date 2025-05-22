@@ -47,7 +47,7 @@ export const useQRCodeGeneration = () => {
     return `[Interface]
 Address = ${allowedAddress}
 DNS = ${defaults.dns}
-PublicKey = ${publicKeyPeer}
+PrivateKey = <CLIENT-PRIVATE-KEY>
 
 [Peer]
 AllowedIPs = 0.0.0.0/0
