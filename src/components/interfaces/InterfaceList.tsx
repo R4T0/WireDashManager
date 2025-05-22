@@ -4,6 +4,7 @@ import { WireguardInterface } from '@/services/mikrotikService';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface InterfaceListProps {
   interfaces: WireguardInterface[];
@@ -61,51 +62,62 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nome</TableHead>
-          <TableHead>Porta</TableHead>
-          <TableHead>MTU</TableHead>
-          <TableHead>Chave Pública</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {interfaces.map((iface) => {
-          const statusInfo = getStatusInfo(iface);
-          
-          return (
-            <TableRow key={iface.id}>
-              <TableCell className="font-medium">{iface.name}</TableCell>
-              <TableCell>{iface.listenPort}</TableCell>
-              <TableCell>{iface.mtu}</TableCell>
-              <TableCell>
-                <div className="max-w-[200px] truncate" title={iface.publicKey}>
-                  {iface.publicKey}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}>
-                  {statusInfo.text}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => onEdit(iface)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => onDelete(iface.id)}>
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <TooltipProvider>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead className="font-medium">Porta</TableHead>
+            <TableHead>MTU</TableHead>
+            <TableHead className="font-medium">Chave Pública</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {interfaces.map((iface) => {
+            const statusInfo = getStatusInfo(iface);
+            
+            return (
+              <TableRow key={iface.id}>
+                <TableCell className="font-medium">{iface.name}</TableCell>
+                <TableCell className="font-medium text-wireguard-primary">
+                  {iface.listenPort}
+                </TableCell>
+                <TableCell>{iface.mtu}</TableCell>
+                <TableCell>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="max-w-[200px] truncate cursor-pointer hover:text-wireguard-primary">
+                        {iface.publicKey}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-md bg-black text-white p-2 rounded">
+                      <p className="break-all">{iface.publicKey}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}>
+                    {statusInfo.text}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => onEdit(iface)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => onDelete(iface.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TooltipProvider>
   );
 };
 
