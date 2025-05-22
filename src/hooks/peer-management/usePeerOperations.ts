@@ -56,17 +56,7 @@ export const usePeerOperations = ({
       // Criar uma cópia do formData para modificação
       const formDataCopy = { ...formData };
       
-      // Converter dados do formulário conforme necessário
-      const peerData = {
-        ...formDataCopy,
-        "public-key": formDataCopy.publicKey,
-        "allowed-address": formDataCopy.allowedAddress,
-        "endpoint-address": formDataCopy.endpoint || "",
-        "endpoint-port": formDataCopy.endpointPort ? parseInt(formDataCopy.endpointPort) : 0,
-        "persistent-keepalive": formDataCopy.persistentKeepalive ? parseInt(formDataCopy.persistentKeepalive) : 25,
-        disabled: formDataCopy.disabled ? "true" : "false"
-      };
-      
+      // Convert disabled to proper boolean before passing to API functions
       if (isEditing && selectedPeer) {
         success = await updatePeer(selectedPeer.id, formDataCopy);
       } else {
