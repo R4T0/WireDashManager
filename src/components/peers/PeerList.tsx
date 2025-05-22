@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { WireguardPeer } from '@/services/mikrotikService';
+import { WireguardPeer, WireguardInterface } from '@/services/mikrotik/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Edit, QrCode, DownloadCloud, Trash } from 'lucide-react';
