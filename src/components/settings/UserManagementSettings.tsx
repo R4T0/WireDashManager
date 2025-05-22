@@ -14,25 +14,34 @@ const UserManagementSettings = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   // Fetch users
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      console.log('Buscando usuários...');
       // Fetch users from database
-      // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
       const { data: usersData, error } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        throw error;
+      }
+      
+      console.log('Usuários encontrados:', usersData);
       
       // Map database users to our User type
       const mappedUsers = usersData ? usersData.map(mapDatabaseUserToUser) : [];
       setUsers(mappedUsers);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
+      setError('Não foi possível carregar os usuários');
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar os usuários',
@@ -56,7 +65,6 @@ const UserManagementSettings = () => {
     try {
       if (currentUser) {
         // Update existing user
-        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { error } = await supabase
           .from('users')
           .update({ 
@@ -66,6 +74,7 @@ const UserManagementSettings = () => {
           .eq('id', currentUser.id);
         
         if (error) throw error;
+        
         toast({
           title: 'Sucesso',
           description: 'Usuário atualizado com sucesso',
@@ -81,12 +90,15 @@ const UserManagementSettings = () => {
         
         if (data.user) {
           // Add to users table with admin flag
-          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
-          await supabase.from('users').insert({
-            id: data.user.id,
-            email: values.email,
-            isadmin: values.isAdmin, // Note: using isadmin (lowercase) for the database
-          });
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: data.user.id,
+              email: values.email,
+              isadmin: values.isAdmin, // Note: using isadmin (lowercase) for the database
+            });
+          
+          if (insertError) throw insertError;
           
           toast({
             title: 'Sucesso',
@@ -109,7 +121,6 @@ const UserManagementSettings = () => {
 
   const handleDelete = async (user: User) => {
     try {
-      // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
       const { error } = await supabase
         .from('users')
         .delete()
@@ -152,6 +163,20 @@ const UserManagementSettings = () => {
         </Button>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-4">
+            {error}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchUsers}
+              className="ml-2"
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+        
         <UsersTable 
           users={users} 
           loading={loading} 

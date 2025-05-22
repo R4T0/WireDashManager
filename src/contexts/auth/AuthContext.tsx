@@ -20,49 +20,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Função para verificar se o usuário é admin
-    const checkUserAdmin = async (userId: string) => {
+    // Função para garantir que o usuário exista na tabela users
+    const ensureUserInTable = async (userId: string, userEmail: string) => {
       try {
+        // Verificar se o usuário já existe na tabela users
         const { data, error } = await supabase
           .from('users')
-          .select('isadmin')
-          .eq('id', userId);
+          .select('*')
+          .eq('id', userId)
+          .single();
           
-        if (error) {
-          console.error('Erro ao verificar permissões:', error);
-          setIsAdmin(false);
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          setIsAdmin(data[0]?.isadmin || false); 
-        } else {
-          // Se o usuário não existir na tabela users, inserir automaticamente
-          try {
-            const userResponse = await supabase.auth.getUser();
-            if (userResponse.data?.user) {
-              const { error: insertError } = await supabase
-                .from('users')
-                .insert({
-                  id: userId,
-                  email: userResponse.data.user.email,
-                  isadmin: false
-                });
-              
-              if (insertError) {
-                console.error('Erro ao inserir usuário na tabela users:', insertError);
-              } else {
-                console.log('Usuário inserido na tabela users com sucesso');
-                setIsAdmin(false); // Novo usuário inserido não é admin
-              }
-            }
-          } catch (insertErr) {
-            console.error('Erro ao inserir usuário:', insertErr);
+        if (error || !data) {
+          console.log('Usuário não encontrado na tabela users, criando agora...');
+          
+          // Se não existir, adicionar na tabela users
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: userId,
+              email: userEmail,
+              isadmin: false // Por padrão, novos usuários não são admin
+            });
+          
+          if (insertError) {
+            console.error('Erro ao inserir usuário na tabela users:', insertError);
+          } else {
+            console.log('Usuário inserido na tabela users com sucesso');
           }
         }
+        
+        // Verificar se o usuário é admin
+        const { data: userData } = await supabase
+          .from('users')
+          .select('isadmin')
+          .eq('id', userId)
+          .single();
+          
+        setIsAdmin(userData?.isadmin || false);
       } catch (error) {
-        console.error('Erro ao verificar permissões do usuário:', error);
-        setIsAdmin(false);
+        console.error('Erro ao verificar/criar usuário:', error);
       }
     };
 
@@ -73,10 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
-        // Verificar admin status quando o usuário fizer login
+        // Verificar/criar usuário na tabela users quando fizer login
         if (event === 'SIGNED_IN' && newSession?.user) {
           setTimeout(() => {
-            checkUserAdmin(newSession.user.id);
+            ensureUserInTable(newSession.user.id, newSession.user.email || '');
           }, 0);
         }
         
@@ -92,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        checkUserAdmin(currentSession.user.id);
+        ensureUserInTable(currentSession.user.id, currentSession.user.email || '');
       }
       
       setIsLoading(false);

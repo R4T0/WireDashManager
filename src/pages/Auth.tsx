@@ -18,7 +18,6 @@ const Auth = () => {
   useEffect(() => {
     const checkForUsers = async () => {
       try {
-        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
         const { data, error, count } = await supabase
           .from('users')
           .select('*', { count: 'exact' });
