@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
-import { WireguardPeer, WireguardInterface } from '@/services/mikrotik/types';
+import { WireguardInterface } from '@/services/mikrotik/types';
 import logger from '@/services/loggerService';
 import { usePeerSearch } from './qrcode/usePeerSearch';
 import { useQRCodeGeneration } from './qrcode/useQRCodeGeneration';
