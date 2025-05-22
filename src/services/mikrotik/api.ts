@@ -1,217 +1,67 @@
 
-import { toast } from '@/components/ui/sonner';
+import { MikrotikConfig } from './types';
+import { MikrotikHttpClient } from './http-client';
+import { WireGuardInterfaceAPI } from './interface-api';
+import { WireGuardPeerAPI } from './peer-api';
 import logger from '../loggerService';
-import { createAuthHeader, getMockInterfaces, getMockPeers } from './utils';
-import { MikrotikConfig, WireguardInterface, WireguardPeer } from './types';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Mikrotik API Client
  */
 class MikrotikApi {
-  private baseUrl: string;
-  private headers: Record<string, string>;
-  private config: MikrotikConfig;
-  private useProxy: boolean = true;
+  private client: MikrotikHttpClient;
+  private interfaceApi: WireGuardInterfaceAPI;
+  private peerApi: WireGuardPeerAPI;
 
   constructor(config: MikrotikConfig) {
-    this.config = config;
-    this.baseUrl = `${config.useHttps ? 'https' : 'http'}://${config.address}${config.port ? `:${config.port}` : ''}/rest`;
-    this.headers = {
-      'Accept': '*/*',
-      'Authorization': createAuthHeader(config.username, config.password),
-      'Content-Type': 'application/json',
-      'User-Agent': 'wireguard-manager/1.0'
-    };
-    logger.info('MikrotikApi initialized', { baseUrl: this.baseUrl });
-  }
-
-  // Generic API methods - private implementation
-  private async makeRequestViaProxy<T>(endpoint: string, method: string, body?: any): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    logger.info(`Using proxy for request to ${url}`);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('mikrotik-proxy', {
-        body: {
-          url,
-          method,
-          headers: { 
-            ...this.headers, 
-            'Authorization': createAuthHeader(this.config.username, this.config.password) 
-          },
-          body
-        }
-      });
-      
-      if (error) {
-        logger.error('Proxy request failed:', error);
-        throw new Error(`Proxy request failed: ${error.message || 'Unknown error'}`);
-      }
-      
-      logger.request(`API proxy response:`, data);
-      
-      if (data.status >= 400) {
-        throw new Error(`API request failed with status ${data.status}: ${data.statusText}`);
-      }
-      
-      return data.data as T;
-    } catch (error) {
-      logger.error('Proxy request failed:', error);
-      toast.error('Falha na comunicação com o proxy');
-      throw error;
-    }
-  }
-
-  private async makeRequestDirect<T>(endpoint: string, method: string, body?: any): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    logger.request(`API Direct Request: ${method} ${url}`, {
-      headers: { ...this.headers, 'Authorization': '[REDACTED]' },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    
-    const response = await fetch(url, {
-      method,
-      mode: 'cors',
-      credentials: 'omit',
-      headers: this.headers,
-      body: method !== 'GET' ? JSON.stringify(body) : undefined
-    });
-    
-    if (!response.ok) {
-      logger.error(`API request failed with status ${response.status}`);
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    logger.request(`API response:`, data);
-    return data as T;
-  }
-
-  // Public method to make requests with proper error handling
-  public async makeRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-    try {
-      const url = `${this.baseUrl}${endpoint}`;
-      logger.info(`Making ${method} request to ${url}`);
-      
-      if (this.useProxy) {
-        return this.makeRequestViaProxy<T>(endpoint, method, body);
-      } else {
-        return this.makeRequestDirect<T>(endpoint, method, body);
-      }
-    } catch (error) {
-      logger.error('API request failed:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof TypeError && error.message.includes('NetworkError') || 
-          error instanceof DOMException && error.message.includes('CORS')) {
-        toast.error('Erro de CORS: O servidor não permite requisições do navegador');
-      } else if (error instanceof TypeError && error.message.includes('Mixed Content')) {
-        toast.error('Erro de conteúdo misto: Tentando acessar HTTP a partir de HTTPS');
-      } else {
-        toast.error('Falha na comunicação com o roteador');
-      }
-      
-      throw error;
-    }
-  }
-
-  // Public method for testing purposes
-  public async testRequest(endpoint: string, method: string, body?: any): Promise<any> {
-    const url = `${this.baseUrl}${endpoint}`;
-    if (this.useProxy) {
-      return this.makeRequestViaProxy(endpoint, method, body);
-    } else {
-      return this.makeRequestDirect(endpoint, method, body);
-    }
+    this.client = new MikrotikHttpClient(config);
+    this.interfaceApi = new WireGuardInterfaceAPI(this.client);
+    this.peerApi = new WireGuardPeerAPI(this.client);
+    logger.info('MikrotikApi initialized');
   }
 
   // WireGuard interface methods
-  public async getInterfaces(): Promise<WireguardInterface[]> {
-    return this.makeRequest<WireguardInterface[]>('/interface/wireguard', 'GET');
+  public async getInterfaces() {
+    return this.interfaceApi.getInterfaces();
   }
 
-  public async createInterface(interfaceData: any): Promise<WireguardInterface> {
-    return this.makeRequest<WireguardInterface>('/interface/wireguard', 'PUT', interfaceData);
+  public async createInterface(interfaceData: any) {
+    return this.interfaceApi.createInterface(interfaceData);
   }
 
-  public async updateInterface(id: string, interfaceData: any): Promise<WireguardInterface> {
-    return this.makeRequest<WireguardInterface>(`/interface/wireguard/${id}`, 'PATCH', interfaceData);
+  public async updateInterface(id: string, interfaceData: any) {
+    return this.interfaceApi.updateInterface(id, interfaceData);
   }
 
-  public async deleteInterface(id: string): Promise<void> {
-    return this.makeRequest<void>(`/interface/wireguard/${id}`, 'DELETE');
+  public async deleteInterface(id: string) {
+    return this.interfaceApi.deleteInterface(id);
   }
 
   // WireGuard peer methods
-  public async getPeers(): Promise<WireguardPeer[]> {
-    return this.makeRequest<WireguardPeer[]>('/interface/wireguard/peers', 'GET')
-      .then(peers => this.mapPeerResponseToPeerObjects(peers));
+  public async getPeers() {
+    return this.peerApi.getPeers();
   }
 
-  // Mapeia as respostas da API para o formato utilizado pela aplicação
-  private mapPeerResponseToPeerObjects(peers: any[]): WireguardPeer[] {
-    return peers.map(peer => ({
-      id: peer['.id'],
-      name: peer.name,
-      interface: peer.interface,
-      allowedAddress: peer['allowed-address'],
-      endpoint: peer['endpoint-address'],
-      endpointPort: peer['endpoint-port'],
-      publicKey: peer['public-key'],
-      privateKey: peer['private-key'] || '', // Map the private key when available
-      disabled: peer.disabled,
-    }));
+  public async createPeer(peerData: any) {
+    return this.peerApi.createPeer(peerData);
   }
 
-  public async createPeer(peerData: any): Promise<WireguardPeer> {
-    console.log('Creating peer with data:', peerData);
-    // Make sure endpoint is set to exactly match the expected format from the image example
-    const peerDataToSend = {
-      ...peerData,
-      // Add any missing required fields from the example that might not be set
-      "persistent-keepalive": peerData["persistent-keepalive"] || "25"
-    };
-    
-    // The URL should match exactly /rest/interface/wireguard/peers/add from the image
-    return this.makeRequest<any>('/interface/wireguard/peers', 'PUT', peerDataToSend)
-      .then(response => {
-        console.log('Peer created, API response:', response);
-        const id = response['.id'] || String(Date.now());
-        return {
-          id,
-          name: peerData.name,
-          interface: peerData.interface,
-          allowedAddress: peerData['allowed-address'],
-          endpoint: peerData['endpoint-address'],
-          endpointPort: peerData['endpoint-port'],
-          publicKey: peerData['public-key'],
-          disabled: peerData.disabled,
-        };
-      });
+  public async updatePeer(id: string, peerData: any) {
+    return this.peerApi.updatePeer(id, peerData);
   }
 
-  public async updatePeer(id: string, peerData: any): Promise<WireguardPeer> {
-    return this.makeRequest<any>(`/interface/wireguard/peers/${id}`, 'PUT', peerData)
-      .then(() => ({
-        id,
-        name: peerData.name,
-        interface: peerData.interface,
-        allowedAddress: peerData['allowed-address'],
-        endpoint: peerData['endpoint-address'],
-        endpointPort: peerData['endpoint-port'],
-        disabled: peerData.disabled,
-      } as WireguardPeer));
+  public async deletePeer(id: string) {
+    return this.peerApi.deletePeer(id);
   }
 
-  public async deletePeer(id: string): Promise<void> {
-    return this.makeRequest<void>(`/interface/wireguard/peers/${id}`, 'DELETE');
+  // Test connection
+  public async testRequest(endpoint: string, method: string, body?: any) {
+    return this.client.testRequest(endpoint, method, body);
   }
 
   // Toggle proxy usage
   public setUseProxy(useProxy: boolean): void {
-    this.useProxy = useProxy;
-    logger.info(`Proxy mode ${useProxy ? 'enabled' : 'disabled'}`);
+    this.client.setUseProxy(useProxy);
   }
 }
 
