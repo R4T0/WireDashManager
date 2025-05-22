@@ -25,8 +25,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Limpar estado de autenticação para evitar problemas
+  // Função para limpar estado de autenticação
   const cleanupAuthState = () => {
+    console.log('Limpando estado de autenticação');
     localStorage.removeItem('supabase.auth.token');
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -41,10 +42,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
     setLoading(true);
     
     try {
-      // Limpar estado de autenticação
+      console.log('Iniciando processo de login para:', email);
+      
+      // Limpar estado de autenticação antes de tentar login
       cleanupAuthState();
       
-      // Tentar fazer logout global por segurança
+      // Tentar fazer logout por segurança
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
@@ -60,44 +63,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
       if (error) throw error;
       
       if (data.user) {
-        // Verificar se o usuário existe na tabela users
-        // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', data.user.id);
-        
-        if (userError) {
-          console.error('Erro ao verificar usuário:', userError);
-          
-          // Se o usuário não existir na tabela users, inserir automaticamente
-          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: data.user.id,
-              email: data.user.email,
-              isadmin: false
-            });
-          
-          if (insertError) {
-            console.error('Erro ao inserir usuário na tabela users:', insertError);
-          }
-        } else if (!userData || userData.length === 0) {
-          // Se o usuário não existir na tabela users, inserir automaticamente
-          // @ts-ignore - We've created the users table in the database, but TypeScript doesn't know about it yet
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: data.user.id,
-              email: data.user.email,
-              isadmin: false
-            });
-          
-          if (insertError) {
-            console.error('Erro ao inserir usuário na tabela users:', insertError);
-          }
-        }
+        console.log('Login bem-sucedido para:', email);
         
         toast({
           title: 'Login realizado com sucesso',

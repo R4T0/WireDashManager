@@ -16,14 +16,15 @@ const UserManagementSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch users
+  // Função para buscar usuários de forma segura
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('Buscando usuários...');
-      // Fetch users from database with more detailed error handling
+      console.log('Buscando lista de usuários...');
+      
+      // Consulta direta sem depender de políticas RLS complexas
       const { data: usersData, error } = await supabase
         .from('users')
         .select('*')
@@ -34,9 +35,9 @@ const UserManagementSettings = () => {
         throw error;
       }
       
-      console.log('Usuários encontrados:', usersData);
+      console.log(`Encontrado(s) ${usersData?.length || 0} usuário(s)`);
       
-      // Map database users to our User type
+      // Mapear dados de usuário para o tipo User
       const mappedUsers = usersData ? usersData.map(mapDatabaseUserToUser) : [];
       setUsers(mappedUsers);
     } catch (error: any) {
@@ -61,10 +62,13 @@ const UserManagementSettings = () => {
     setDialogOpen(true);
   };
 
+  // Função para criar/atualizar usuário
   const handleSubmit = async (values: { email: string; password: string; isAdmin: boolean }) => {
     try {
       if (currentUser) {
-        // Update existing user
+        console.log('Atualizando usuário existente:', currentUser.email);
+        
+        // Atualizar usuário existente
         const { error } = await supabase
           .from('users')
           .update({ 
@@ -80,36 +84,20 @@ const UserManagementSettings = () => {
           description: 'Usuário atualizado com sucesso',
         });
       } else {
-        // Create new user directly in the auth system
-        const { data, error } = await supabase.auth.admin.createUser({
+        console.log('Criando novo usuário:', values.email);
+        
+        // Primeiro, registrar usuário no sistema de autenticação
+        const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
-          email_confirm: true
         });
         
-        if (error) {
-          // Tentar cadastro normal se o admin create não funcionar
-          const signUpResult = await supabase.auth.signUp({
-            email: values.email,
-            password: values.password,
-          });
+        if (error) throw error;
+        
+        if (data.user) {
+          console.log('Usuário criado na autenticação, adicionando à tabela users');
           
-          if (signUpResult.error) throw signUpResult.error;
-          
-          if (signUpResult.data.user) {
-            // Add user to users table
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert({
-                id: signUpResult.data.user.id,
-                email: values.email,
-                isadmin: values.isAdmin,
-              });
-            
-            if (insertError) throw insertError;
-          }
-        } else if (data.user) {
-          // Admin create worked, now add to users table
+          // Adicionar usuário à tabela users
           const { error: insertError } = await supabase
             .from('users')
             .insert({
@@ -118,17 +106,20 @@ const UserManagementSettings = () => {
               isadmin: values.isAdmin,
             });
           
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Erro ao inserir usuário na tabela users:', insertError);
+            throw insertError;
+          }
+          
+          toast({
+            title: 'Sucesso',
+            description: 'Usuário criado com sucesso',
+          });
         }
-        
-        toast({
-          title: 'Sucesso',
-          description: 'Usuário criado com sucesso',
-        });
       }
       
       setDialogOpen(false);
-      fetchUsers();
+      fetchUsers(); // Recarregar lista após mudanças
     } catch (error: any) {
       console.error('Erro ao processar usuário:', error);
       toast({
@@ -139,9 +130,12 @@ const UserManagementSettings = () => {
     }
   };
 
+  // Função para excluir usuário
   const handleDelete = async (user: User) => {
     try {
-      // Primeiro remover o usuário da tabela users
+      console.log('Removendo usuário:', user.email);
+      
+      // Remover da tabela users primeiro
       const { error } = await supabase
         .from('users')
         .delete()
@@ -149,12 +143,12 @@ const UserManagementSettings = () => {
       
       if (error) throw error;
       
-      // Depois tentar remover do sistema de autenticação
+      // Tentar remover da autenticação (pode falhar sem service_role)
       try {
+        console.log('Tentando remover usuário da autenticação');
         await supabase.auth.admin.deleteUser(user.id);
       } catch (authError) {
-        console.error('Erro ao remover usuário da autenticação:', authError);
-        // Continue mesmo se falhar na auth
+        console.log('Aviso: Não foi possível remover usuário da autenticação. Isso é normal sem chave service_role.');
       }
       
       toast({
@@ -162,8 +156,9 @@ const UserManagementSettings = () => {
         description: 'Usuário removido com sucesso',
       });
       
-      fetchUsers();
+      fetchUsers(); // Recarregar lista após exclusão
     } catch (error: any) {
+      console.error('Erro ao excluir usuário:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao remover usuário',
@@ -173,6 +168,7 @@ const UserManagementSettings = () => {
   };
 
   const handleEditUser = (user: User) => {
+    console.log('Editando usuário:', user.email);
     setCurrentUser(user);
     setDialogOpen(true);
   };

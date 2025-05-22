@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { toast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
   user: User | null;
@@ -19,89 +20,102 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Função para garantir que o usuário exista na tabela users
-    const ensureUserInTable = async (userId: string, userEmail: string) => {
-      try {
-        // Verificar se o usuário já existe na tabela users usando uma abordagem segura
-        const { data, error } = await supabase
-          .from('users')
-          .select('isadmin')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Erro ao verificar usuário:', error);
-          // Tentar continuar mesmo com erro
-        }
-          
-        if (!data) {
-          console.log('Usuário não encontrado na tabela users, criando agora...');
-          
-          // Se não existir, adicionar na tabela users
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: userId,
-              email: userEmail,
-              isadmin: false // Por padrão, novos usuários não são admin
-            });
-          
-          if (insertError) {
-            console.error('Erro ao inserir usuário na tabela users:', insertError);
-          } else {
-            console.log('Usuário inserido na tabela users com sucesso');
-          }
-        } else {
-          // Usuário existe, definir flag de admin
-          setIsAdmin(data.isadmin || false);
-        }
-      } catch (error) {
-        console.error('Erro ao verificar/criar usuário:', error);
+  // Função segura para verificar/criar usuário sem causar recursão
+  const safeEnsureUser = async (userId: string, userEmail: string) => {
+    try {
+      console.log('Verificando usuário na tabela users:', userId);
+      
+      // Consulta direta pelo ID sem depender de políticas RLS
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao verificar usuário:', error);
+        return;
       }
-    };
+      
+      if (!data) {
+        console.log('Usuário não encontrado, criando registro...');
+        
+        // Criar usuário se não existir
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: userEmail,
+            isadmin: false
+          });
+        
+        if (insertError) {
+          console.error('Erro ao inserir usuário:', insertError);
+        } else {
+          console.log('Usuário inserido com sucesso');
+          setIsAdmin(false);
+        }
+      } else {
+        console.log('Usuário encontrado:', data);
+        setIsAdmin(data.isadmin || false);
+      }
+    } catch (error) {
+      console.error('Erro ao processar usuário:', error);
+    }
+  };
 
-    // Configurar listener para mudanças de autenticação
+  // Efeito para configurar ouvintes de autenticação
+  useEffect(() => {
+    console.log('Configurando ouvintes de autenticação');
+    
+    // Definir ouvinte para mudanças de estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        console.log('Auth event:', event);
+        console.log('Evento de autenticação:', event);
+        
+        // Atualizar estado com sessão e usuário
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
-        // Verificar/criar usuário na tabela users quando fizer login
         if (event === 'SIGNED_IN' && newSession?.user) {
-          // Usar setTimeout para evitar recursão na política
+          // Usar setTimeout para evitar problemas de recursão
           setTimeout(() => {
-            ensureUserInTable(newSession.user.id, newSession.user.email || '');
+            safeEnsureUser(newSession.user.id, newSession.user.email || '');
           }, 100);
-        }
-        
-        if (event === 'SIGNED_OUT') {
+        } else if (event === 'SIGNED_OUT') {
           setIsAdmin(false);
         }
       }
     );
 
-    // Verificar sessão atual
+    // Verificar sessão atual ao inicializar
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Sessão atual:', currentSession ? 'Autenticado' : 'Não autenticado');
+      
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
+        // Usar setTimeout para evitar problemas de recursão
         setTimeout(() => {
-          ensureUserInTable(currentSession.user.id, currentSession.user.email || '');
+          safeEnsureUser(currentSession.user.id, currentSession.user.email || '');
         }, 100);
       }
       
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  // Função de logout segura
   const signOut = async () => {
     try {
-      // Limpar estado de autenticação
+      console.log('Iniciando processo de logout');
+      
+      // Limpar estado de autenticação local
       localStorage.removeItem('supabase.auth.token');
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -109,17 +123,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
-      // Tentar fazer logout global
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Ignorar erros
-      }
+      // Tentativa de logout global
+      await supabase.auth.signOut({ scope: 'global' });
       
-      // Forçar recarregamento da página para limpar o estado
+      // Resetar estado
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      
+      // Forçar redirecionamento para página de login
       window.location.href = '/auth';
-    } catch (error) {
+      
+      toast({
+        title: 'Logout realizado',
+        description: 'Você foi desconectado com sucesso',
+      });
+    } catch (error: any) {
       console.error('Erro ao fazer logout:', error);
+      
+      // Forçar redirecionamento mesmo em caso de erro
+      window.location.href = '/auth';
     }
   };
 
