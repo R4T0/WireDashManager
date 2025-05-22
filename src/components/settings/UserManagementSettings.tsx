@@ -23,7 +23,7 @@ const UserManagementSettings = () => {
     
     try {
       console.log('Buscando usuários...');
-      // Fetch users from database
+      // Fetch users from database with more detailed error handling
       const { data: usersData, error } = await supabase
         .from('users')
         .select('*')
@@ -69,7 +69,7 @@ const UserManagementSettings = () => {
           .from('users')
           .update({ 
             email: values.email,
-            isadmin: values.isAdmin // Note: using isadmin (lowercase) for the database
+            isadmin: values.isAdmin
           })
           .eq('id', currentUser.id);
         
@@ -80,37 +80,57 @@ const UserManagementSettings = () => {
           description: 'Usuário atualizado com sucesso',
         });
       } else {
-        // Create new user
-        const { data, error } = await supabase.auth.signUp({
+        // Create new user directly in the auth system
+        const { data, error } = await supabase.auth.admin.createUser({
           email: values.email,
           password: values.password,
+          email_confirm: true
         });
         
-        if (error) throw error;
-        
-        if (data.user) {
-          // Add to users table with admin flag
+        if (error) {
+          // Tentar cadastro normal se o admin create não funcionar
+          const signUpResult = await supabase.auth.signUp({
+            email: values.email,
+            password: values.password,
+          });
+          
+          if (signUpResult.error) throw signUpResult.error;
+          
+          if (signUpResult.data.user) {
+            // Add user to users table
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert({
+                id: signUpResult.data.user.id,
+                email: values.email,
+                isadmin: values.isAdmin,
+              });
+            
+            if (insertError) throw insertError;
+          }
+        } else if (data.user) {
+          // Admin create worked, now add to users table
           const { error: insertError } = await supabase
             .from('users')
             .insert({
               id: data.user.id,
               email: values.email,
-              isadmin: values.isAdmin, // Note: using isadmin (lowercase) for the database
+              isadmin: values.isAdmin,
             });
           
           if (insertError) throw insertError;
-          
-          toast({
-            title: 'Sucesso',
-            description: 'Usuário criado com sucesso',
-          });
         }
+        
+        toast({
+          title: 'Sucesso',
+          description: 'Usuário criado com sucesso',
+        });
       }
       
       setDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
-      console.error('Erro:', error);
+      console.error('Erro ao processar usuário:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Ocorreu um erro ao processar a operação',
@@ -121,12 +141,21 @@ const UserManagementSettings = () => {
 
   const handleDelete = async (user: User) => {
     try {
+      // Primeiro remover o usuário da tabela users
       const { error } = await supabase
         .from('users')
         .delete()
         .eq('id', user.id);
       
       if (error) throw error;
+      
+      // Depois tentar remover do sistema de autenticação
+      try {
+        await supabase.auth.admin.deleteUser(user.id);
+      } catch (authError) {
+        console.error('Erro ao remover usuário da autenticação:', authError);
+        // Continue mesmo se falhar na auth
+      }
       
       toast({
         title: 'Sucesso',

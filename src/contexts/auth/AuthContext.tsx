@@ -23,14 +23,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Função para garantir que o usuário exista na tabela users
     const ensureUserInTable = async (userId: string, userEmail: string) => {
       try {
-        // Verificar se o usuário já existe na tabela users
+        // Verificar se o usuário já existe na tabela users usando uma abordagem segura
         const { data, error } = await supabase
           .from('users')
-          .select('*')
+          .select('isadmin')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao verificar usuário:', error);
+          // Tentar continuar mesmo com erro
+        }
           
-        if (error || !data) {
+        if (!data) {
           console.log('Usuário não encontrado na tabela users, criando agora...');
           
           // Se não existir, adicionar na tabela users
@@ -47,16 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             console.log('Usuário inserido na tabela users com sucesso');
           }
+        } else {
+          // Usuário existe, definir flag de admin
+          setIsAdmin(data.isadmin || false);
         }
-        
-        // Verificar se o usuário é admin
-        const { data: userData } = await supabase
-          .from('users')
-          .select('isadmin')
-          .eq('id', userId)
-          .single();
-          
-        setIsAdmin(userData?.isadmin || false);
       } catch (error) {
         console.error('Erro ao verificar/criar usuário:', error);
       }
@@ -71,9 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Verificar/criar usuário na tabela users quando fizer login
         if (event === 'SIGNED_IN' && newSession?.user) {
+          // Usar setTimeout para evitar recursão na política
           setTimeout(() => {
             ensureUserInTable(newSession.user.id, newSession.user.email || '');
-          }, 0);
+          }, 100);
         }
         
         if (event === 'SIGNED_OUT') {
@@ -88,7 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        ensureUserInTable(currentSession.user.id, currentSession.user.email || '');
+        setTimeout(() => {
+          ensureUserInTable(currentSession.user.id, currentSession.user.email || '');
+        }, 100);
       }
       
       setIsLoading(false);
