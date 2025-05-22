@@ -46,8 +46,10 @@ export const useQRCodeGeneration = () => {
     const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
     const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
     const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
+    const persistentKeepalive = peer.persistentKeepalive || peer['persistent-keepalive'] || "25";
     
     // Generate a configuration following the WireGuard standard format
+    // Make sure there are no trailing spaces at the end of each line and at the end of the file
     return `[Interface]
 PrivateKey = ${peerPublicKey}
 Address = ${allowedAddress}
@@ -57,8 +59,7 @@ DNS = ${defaults.dns}
 PublicKey = ${serverPublicKey}
 AllowedIPs = 0.0.0.0/0
 Endpoint = ${endpoint}:${endpointPort}
-PersistentKeepalive = 25
-`;
+PersistentKeepalive = ${persistentKeepalive}`.trim();
   };
 
   const handleGenerateQRCode = async (config: string) => {
@@ -86,8 +87,8 @@ PersistentKeepalive = 25
     
     logger.info(`Downloading config file for ${selectedPeer.name}`);
     
-    // Create a blob with the config content
-    const blob = new Blob([configText], { type: 'text/plain' });
+    // Create a blob with the config content - ensure no trailing spaces
+    const blob = new Blob([configText.trim()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
     // Create a link element and trigger download

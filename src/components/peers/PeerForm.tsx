@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ interface PeerFormData {
   endpoint: string;
   endpointPort: string;
   publicKey?: string;
+  persistentKeepalive?: string;
   disabled: boolean;
 }
 
@@ -140,6 +142,19 @@ const PeerForm = ({
               value={formData.endpointPort}
               onChange={(e) => onChange('endpointPort', e.target.value)}
               placeholder={defaults.port || "51820"}
+              className="form-input"
+            />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="persistentKeepalive" className="text-right">
+              Persistent Keepalive
+            </Label>
+            <Input
+              id="persistentKeepalive"
+              value={formData.persistentKeepalive || '25'}
+              onChange={(e) => onChange('persistentKeepalive', e.target.value)}
+              placeholder="25"
               className="form-input"
             />
           </div>
