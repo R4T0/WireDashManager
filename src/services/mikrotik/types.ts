@@ -18,8 +18,10 @@ export interface WireguardInterface {
   mtu: string;
   privateKey: string;
   publicKey: string;
-  running: boolean;
-  disabled: boolean;
+  running: boolean | string;
+  disabled: boolean | string;
+  // Adicionando propriedades com kebab-case para compatibilidade com a API
+  [key: string]: any;
 }
 
 export interface WireguardPeer {
@@ -31,7 +33,9 @@ export interface WireguardPeer {
   endpointPort: string;
   publicKey: string;
   presharedKey?: string;
-  disabled: boolean;
+  disabled: boolean | string;
+  // Adicionando propriedades com kebab-case para compatibilidade com a API
+  [key: string]: any;
 }
 
 export interface NewPeerConfig {

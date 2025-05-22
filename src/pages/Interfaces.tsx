@@ -44,8 +44,26 @@ const Interfaces = () => {
     try {
       const api = new MikrotikApi(config);
       const data = await api.getInterfaces();
-      console.log('Interfaces loaded:', data);
-      setInterfaces(data);
+      console.log('Interfaces carregadas (raw):', data);
+
+      // Certifique-se de que os dados estão no formato correto
+      const formattedData = data.map(item => {
+        // Verifica se o objeto tem propriedades no formato kebab-case e converte para camelCase
+        const iface: WireguardInterface = {
+          id: item.id || item['.id'] || String(Math.random()),
+          name: item.name,
+          listenPort: item.listenPort || item['listen-port'] || '',
+          mtu: item.mtu,
+          privateKey: item.privateKey || item['private-key'] || '',
+          publicKey: item.publicKey || item['public-key'] || '',
+          running: item.running || false,
+          disabled: item.disabled || false
+        };
+        return iface;
+      });
+
+      console.log('Interfaces formatadas:', formattedData);
+      setInterfaces(formattedData);
     } catch (error) {
       console.error('Failed to fetch interfaces:', error);
       toast.error('Falha ao carregar interfaces do roteador');

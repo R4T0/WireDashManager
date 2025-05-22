@@ -61,17 +61,20 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
     }
   };
 
+  // Para debug - mostrar a estrutura dos dados recebidos
+  console.log('Interfaces recebidas:', interfaces);
+
   return (
     <TooltipProvider>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
+            <TableHead className="font-medium">Nome</TableHead>
             <TableHead className="font-medium">Porta</TableHead>
-            <TableHead>MTU</TableHead>
+            <TableHead className="font-medium">MTU</TableHead>
             <TableHead className="font-medium">Chave Pública</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+            <TableHead className="font-medium">Status</TableHead>
+            <TableHead className="text-right font-medium">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,20 +83,20 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
             
             return (
               <TableRow key={iface.id}>
-                <TableCell className="font-medium">{iface.name}</TableCell>
+                <TableCell className="font-medium">{iface.name || '-'}</TableCell>
                 <TableCell className="font-medium text-wireguard-primary">
-                  {iface.listenPort}
+                  {iface.listenPort || iface['listen-port'] || '-'}
                 </TableCell>
-                <TableCell>{iface.mtu}</TableCell>
+                <TableCell className="font-medium">{iface.mtu || '-'}</TableCell>
                 <TableCell>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="max-w-[200px] truncate cursor-pointer hover:text-wireguard-primary">
-                        {iface.publicKey}
+                        {iface.publicKey || iface['public-key'] || '-'}
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-md bg-black text-white p-2 rounded">
-                      <p className="break-all">{iface.publicKey}</p>
+                      <p className="break-all">{iface.publicKey || iface['public-key'] || '-'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
