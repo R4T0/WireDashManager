@@ -20,14 +20,14 @@ const StatusCard: React.FC<StatusCardProps> = ({
   if (!isConfigured) {
     return (
       <Card className="bg-wireguard-muted/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center">
-            <Activity className="mr-2 h-5 w-5 text-yellow-500" />
+        <CardHeader className="p-3 md:p-6 pb-1 md:pb-2">
+          <CardTitle className="text-base md:text-lg font-medium flex items-center">
+            <Activity className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5 text-yellow-500" />
             Status da Conexão
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-sm text-wireguard-muted-foreground">
+        <CardContent className="p-3 md:p-6 pt-0">
+          <div className="text-xs md:text-sm text-wireguard-muted-foreground">
             O roteador Mikrotik não está configurado. Por favor, vá para a página de configurações para configurar a conexão.
           </div>
         </CardContent>
@@ -38,19 +38,19 @@ const StatusCard: React.FC<StatusCardProps> = ({
   if (!isConnected) {
     return (
       <Card className="bg-wireguard-muted/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center">
-            <Activity className="mr-2 h-5 w-5 text-red-500" />
+        <CardHeader className="p-3 md:p-6 pb-1 md:pb-2">
+          <CardTitle className="text-base md:text-lg font-medium flex items-center">
+            <Activity className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5 text-red-500" />
             Status da Conexão
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-sm text-wireguard-muted-foreground">
+        <CardContent className="p-3 md:p-6 pt-0">
+          <div className="text-xs md:text-sm text-wireguard-muted-foreground">
             Não foi possível conectar ao roteador Mikrotik. Por favor, verifique as configurações.
           </div>
           <button 
             onClick={() => testConnection()}
-            className="mt-3 px-3 py-1 bg-wireguard-primary text-xs rounded-md text-wireguard-foreground"
+            className="mt-2 md:mt-3 px-2 md:px-3 py-1 bg-wireguard-primary text-xs rounded-md text-wireguard-foreground"
           >
             Tentar novamente
           </button>
@@ -61,17 +61,17 @@ const StatusCard: React.FC<StatusCardProps> = ({
 
   return (
     <Card className="bg-wireguard-muted/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium flex items-center">
-          <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
+      <CardHeader className="p-3 md:p-6 pb-1 md:pb-2">
+        <CardTitle className="text-base md:text-lg font-medium flex items-center">
+          <CheckCircle className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5 text-green-500" />
           Status da Conexão
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="text-sm text-wireguard-foreground">
+      <CardContent className="p-3 md:p-6 pt-0">
+        <div className="text-xs md:text-sm text-wireguard-foreground">
           Conectado ao roteador Mikrotik com sucesso.
           {config && (
-            <div className="mt-2 text-xs text-wireguard-muted-foreground">
+            <div className="mt-1 md:mt-2 text-xs text-wireguard-muted-foreground">
               <p>Endereço: {config.address}:{config.port}</p>
               <p>Usuário: {config.username}</p>
               <p>Protocolo: {config.useHttps ? 'HTTPS' : 'HTTP'}</p>

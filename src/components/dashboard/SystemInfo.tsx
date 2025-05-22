@@ -18,11 +18,11 @@ interface SystemInfoProps {
 const SystemInfo: React.FC<SystemInfoProps> = ({ systemData, isLoading }) => {
   return (
     <Card className="bg-wireguard-muted/50">
-      <CardHeader>
-        <CardTitle>Informações do Sistema</CardTitle>
+      <CardHeader className="p-4 md:p-6">
+        <CardTitle className="text-base md:text-lg">Informações do Sistema</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2 text-sm">
+      <CardContent className="p-4 md:p-6 pt-0">
+        <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
           {isLoading ? (
             <div className="text-wireguard-muted-foreground">Carregando informações do sistema...</div>
           ) : systemData ? (
@@ -33,11 +33,11 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ systemData, isLoading }) => {
               </div>
               <div className="flex justify-between">
                 <span className="text-wireguard-muted-foreground">Uptime:</span>
-                <span>{systemData.uptime}</span>
+                <span className="text-right flex-shrink overflow-hidden text-ellipsis max-w-[150px]">{systemData.uptime}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-wireguard-muted-foreground">Modelo:</span>
-                <span>{systemData.model}</span>
+                <span className="text-right flex-shrink overflow-hidden text-ellipsis max-w-[150px]">{systemData.model}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-wireguard-muted-foreground">CPU:</span>
