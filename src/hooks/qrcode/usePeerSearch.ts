@@ -9,11 +9,15 @@ export const usePeerSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter peers based on search query
-  const filteredPeers = searchQuery
-    ? peers.filter(peer => 
-        peer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        peer.comment?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : peers;
+  const filteredPeers = peers.filter(peer => {
+    if (!searchQuery || typeof searchQuery !== 'string') return true;
+    
+    const query = searchQuery.toLowerCase();
+    const nameMatch = peer.name?.toLowerCase().includes(query);
+    const commentMatch = peer.comment?.toLowerCase().includes(query);
+    
+    return nameMatch || commentMatch;
+  });
 
   const handlePeerSelect = (peerId: string) => {
     const peer = peers.find(p => p['.id'] === peerId);

@@ -27,7 +27,7 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
     setSelectedPeer,
     searchQuery, 
     setSearchQuery, 
-    handlePeerSelect: selectPeer 
+    handlePeerSelect 
   } = usePeerSearch();
   
   const { 
@@ -52,6 +52,7 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
           fetchData();
         } else {
           logger.warn("Connection test failed");
+          setLoading(false);
         }
       });
     }
@@ -84,8 +85,10 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
   };
 
   const handlePeerSelect = (peerId: string) => {
-    const peer = selectPeer(peerId);
+    const peer = peers.find(p => p['.id'] === peerId);
+    
     if (peer) {
+      setSelectedPeer(peer);
       logger.info(`Selected peer: ${peer.name}, interface: ${peer.interface}`);
       logger.debug(`Available interfaces:`, interfaces);
       
@@ -101,6 +104,8 @@ export const useQRCode = ({ isConnected, testConnection, config }: UseQRCodeProp
       setConfigText(sampleConfig);
       handleGenerateQRCode(sampleConfig);
     }
+    
+    return peer;
   };
 
   const downloadQrCode = () => {

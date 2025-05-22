@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Search } from 'lucide-react';
-import { WireguardPeer } from '@/services/mikrotikService';
+import { WireguardPeer } from '@/services/mikrotik/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +48,7 @@ const PeerSearch: React.FC<PeerSearchProps> = ({
           <div className="space-y-2">
             <Label htmlFor="peer-select">Select Peer</Label>
             <Select
-              value={selectedPeer?.id || ''}
+              value={selectedPeer ? selectedPeer['.id'] : ''}
               onValueChange={handlePeerSelect}
               disabled={loading || filteredPeers.length === 0}
             >
@@ -57,7 +57,7 @@ const PeerSearch: React.FC<PeerSearchProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {filteredPeers.map((peer) => (
-                  <SelectItem key={peer.id} value={peer.id}>
+                  <SelectItem key={peer['.id']} value={peer['.id']}>
                     {peer.name} ({peer.interface})
                   </SelectItem>
                 ))}
@@ -75,8 +75,8 @@ const PeerSearch: React.FC<PeerSearchProps> = ({
                 <div className="text-wireguard-muted-foreground">Interface:</div>
                 <div className="text-right">{selectedPeer.interface}</div>
                 
-                <div className="text-wireguard-muted-foreground">Created:</div>
-                <div className="text-right">May 20, 2025</div>
+                <div className="text-wireguard-muted-foreground">Allowed Address:</div>
+                <div className="text-right">{selectedPeer['allowed-address'] || '-'}</div>
               </div>
             </div>
           )}

@@ -23,28 +23,37 @@ export const useQRCodeGeneration = () => {
     });
     
     // Find the matching interface to get its public key
-    const interfaceObj = interfaces.find(iface => iface.name === peer.interface);
+    const interfaceName = peer.interface;
+    logger.debug(`Looking for interface with name: ${interfaceName}`);
+    
+    const interfaceObj = interfaces.find(iface => iface.name === interfaceName);
     
     if (!interfaceObj) {
-      logger.warn(`Interface "${peer.interface}" not found for peer "${peer.name}"`);
+      logger.warn(`Interface "${interfaceName}" not found for peer "${peer.name}"`);
+      logger.debug(`Available interfaces: ${JSON.stringify(interfaces.map(i => i.name))}`);
     }
     
-    // Get the interface's public key for the [Peer] section
-    const serverPublicKey = interfaceObj?.publicKey || '<PUBLIC-KEY-INTERFACE>';
+    // Get the interface's public key for the [Peer] section in the client config
+    const serverPublicKey = interfaceObj?.publicKey || interfaceObj?.['public-key'] || '<PUBLIC-KEY-INTERFACE>';
     logger.debug(`Server public key: ${serverPublicKey}`);
     
     // Use peer's public key for the [Interface] section
-    const publicKeyPeer = peer.publicKey || '<PUBLICK-KEY-PEER>';
+    const publicKeyPeer = peer.publicKey || peer['public-key'] || '<PUBLICK-KEY-PEER>';
+    
+    const endpoint = peer.endpoint || peer['endpoint-address'] || defaults.endpoint;
+    const endpointPort = peer.endpointPort || peer['endpoint-port'] || defaults.port;
+    const allowedAddress = peer.allowedAddress || peer['allowed-address'] || '10.0.0.2/32';
     
     return `[Interface]
-Address = ${peer.allowedAddress}
+Address = ${allowedAddress}
 DNS = ${defaults.dns}
-PublicKey = ${publicKeyPeer}
+PrivateKey = <PRIVATE-KEY-CLIENT>
 
 [Peer]
 AllowedIPs = 0.0.0.0/0
-Endpoint = ${peer.endpoint || defaults.endpoint}:${peer.endpointPort || defaults.port}
+Endpoint = ${endpoint}:${endpointPort}
 PublicKey = ${serverPublicKey}
+PersistentKeepalive = 25
 `;
   };
 
