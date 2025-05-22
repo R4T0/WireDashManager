@@ -67,6 +67,7 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
           <TableHead>Nome</TableHead>
           <TableHead>Porta</TableHead>
           <TableHead>MTU</TableHead>
+          <TableHead>Chave Pública</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
@@ -80,6 +81,11 @@ const InterfaceList: React.FC<InterfaceListProps> = ({
               <TableCell className="font-medium">{iface.name}</TableCell>
               <TableCell>{iface.listenPort}</TableCell>
               <TableCell>{iface.mtu}</TableCell>
+              <TableCell>
+                <div className="max-w-[200px] truncate" title={iface.publicKey}>
+                  {iface.publicKey}
+                </div>
+              </TableCell>
               <TableCell>
                 <span className={`inline-flex px-2 py-1 rounded-full text-xs ${statusInfo.className}`}>
                   {statusInfo.text}
