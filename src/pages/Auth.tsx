@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -145,7 +144,7 @@ const Auth = () => {
           id: data.user.id,
           email: email,
           // Se for o primeiro usuário, será admin por padrão
-          isAdmin: isFirstUser
+          isadmin: isFirstUser // Note: using isadmin (lowercase) for the database
         });
         
         if (insertError) throw insertError;

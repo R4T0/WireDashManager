@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { User } from '@/types/user';
+import { User, mapDatabaseUserToUser } from '@/types/user';
 
 // Esquema para validação do formulário
 const userFormSchema = z.object({
@@ -51,7 +52,9 @@ const UserManagementSettings = () => {
       
       if (error) throw error;
       
-      setUsers(usersData || []);
+      // Map database users to our User type
+      const mappedUsers = usersData ? usersData.map(mapDatabaseUserToUser) : [];
+      setUsers(mappedUsers);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       toast({
@@ -87,7 +90,7 @@ const UserManagementSettings = () => {
           .from('users')
           .update({ 
             email: values.email,
-            isAdmin: values.isAdmin
+            isadmin: values.isAdmin // Note: using isadmin (lowercase) for the database
           })
           .eq('id', currentUser.id);
         
@@ -111,7 +114,7 @@ const UserManagementSettings = () => {
           await supabase.from('users').insert({
             id: data.user.id,
             email: values.email,
-            isAdmin: values.isAdmin,
+            isadmin: values.isAdmin, // Note: using isadmin (lowercase) for the database
           });
           
           toast({

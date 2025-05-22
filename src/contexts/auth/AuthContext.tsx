@@ -27,12 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // @ts-ignore - We've created the table in the database, but TypeScript doesn't know about it yet
         const { data, error } = await supabase
           .from('users')
-          .select('isAdmin')
+          .select('isadmin')
           .eq('id', userId)
           .single();
           
         if (error) throw error;
-        setIsAdmin(data?.isAdmin || false);
+        setIsAdmin(data?.isadmin || false); // Note: using isadmin (lowercase) from the database
       } catch (error) {
         console.error('Erro ao verificar permissões do usuário:', error);
         setIsAdmin(false);
