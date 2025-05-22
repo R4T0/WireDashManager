@@ -54,7 +54,7 @@ const Interfaces = () => {
           : Boolean(item.disabled);
           
         const running = typeof item.running === 'string'
-          ? item.running.toLowerCase() === 'true'
+          ? item.running.toLowerCase() === 'true' 
           : Boolean(item.running);
           
         // Verifica se o objeto tem propriedades no formato kebab-case e converte para camelCase

@@ -33,7 +33,7 @@ export interface WireguardPeer {
   endpointPort: string;
   publicKey: string;
   presharedKey?: string;
-  disabled: boolean | string;
+  disabled: boolean;
   persistentKeepalive?: string;
   // Adicionando propriedades com kebab-case para compatibilidade com a API
   [key: string]: any;
