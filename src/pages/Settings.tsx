@@ -6,6 +6,7 @@ import WireguardDefaultSettings from '@/components/settings/WireguardDefaultSett
 import LogViewer from '@/components/debug/LogViewer';
 import SettingsHeader from '@/components/settings/SettingsHeader';
 import ConnectionDebugger from '@/components/debug/ConnectionDebugger';
+import UserManagementSettings from '@/components/settings/UserManagementSettings';
 
 const Settings = () => {
   return (
@@ -16,6 +17,7 @@ const Settings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="mikrotik">Conexão Mikrotik</TabsTrigger>
           <TabsTrigger value="defaults">Configuração Padrão</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="logs">Logs do Sistema</TabsTrigger>
           <TabsTrigger value="debug">Diagnóstico</TabsTrigger>
         </TabsList>
@@ -26,6 +28,10 @@ const Settings = () => {
         
         <TabsContent value="defaults">
           <WireguardDefaultSettings />
+        </TabsContent>
+        
+        <TabsContent value="users">
+          <UserManagementSettings />
         </TabsContent>
         
         <TabsContent value="logs">
