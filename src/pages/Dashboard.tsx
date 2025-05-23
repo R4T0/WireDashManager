@@ -33,9 +33,10 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 max-w-full overflow-hidden">
+      {/* Cards principais com altura uniforme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-6">
-        <div className={isMobile ? "col-span-1" : "col-span-1"}>
+        <div className="col-span-1">
           <StatusCard 
             isConfigured={isConfigured} 
             isConnected={isConnected} 
