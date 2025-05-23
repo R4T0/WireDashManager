@@ -58,9 +58,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <img 
             src="/lovable-uploads/f28adbf6-258e-4edf-805e-135b0e76115e.png" 
             alt="WireDash Logo" 
-            className="w-8 h-8 teal-glow"
+            className="w-8 h-8"
           />
-          <h1 className="text-lg font-bold text-wireguard-primary tracking-tight">WireDash</h1>
+          <h1 className="text-lg font-bold text-white tracking-tight">WireDash</h1>
         </div>
 
         {/* Nav items */}

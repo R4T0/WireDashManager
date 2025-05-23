@@ -67,9 +67,10 @@
   }
 }
 
-.teal-glow {
+/* Removido o efeito de brilho da logo */
+/* .teal-glow {
   filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
-}
+} */
 
 .glass-card {
   @apply bg-black/20 backdrop-blur-sm border border-white/10 shadow-lg;
