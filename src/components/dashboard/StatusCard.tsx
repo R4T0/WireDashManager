@@ -69,12 +69,10 @@ const StatusCard: React.FC<StatusCardProps> = ({
       </CardHeader>
       <CardContent className="p-3 md:p-6 pt-0">
         <div className="text-xs md:text-sm text-wireguard-foreground">
-          Conectado ao roteador Mikrotik com sucesso.
+          Conectado com sucesso.
           {config && (
             <div className="mt-1 md:mt-2 text-xs text-wireguard-muted-foreground">
               <p>Endereço: {config.address}:{config.port}</p>
-              <p>Usuário: {config.username}</p>
-              <p>Protocolo: {config.useHttps ? 'HTTPS' : 'HTTP'}</p>
             </div>
           )}
         </div>
