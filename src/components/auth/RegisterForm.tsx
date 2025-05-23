@@ -43,7 +43,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       setError(null);
-      await signUp(values.email, values.password);
+      await signUp(values);
       onSuccess();
     } catch (error: any) {
       console.error('Erro no registro:', error);

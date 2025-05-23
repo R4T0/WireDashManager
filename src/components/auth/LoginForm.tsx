@@ -16,7 +16,7 @@ interface LoginFormProps {
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
-  password: z.string().min(6, { message: 'A senha precisa ter pelo menos 6 caracteres' }),
+  password: z.string().min(1, { message: 'A senha é obrigatória' }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -38,7 +38,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       setError(null);
-      await signIn(values.email, values.password);
+      await signIn(values);
       onSuccess();
     } catch (error: any) {
       console.error('Erro no login:', error);

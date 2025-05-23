@@ -4,13 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Shield } from 'lucide-react';
-import { User } from '@/types/user';
+import { SystemUser } from '@/types/auth';
 
 interface UsersTableProps {
-  users: User[];
+  users: SystemUser[];
   loading: boolean;
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
+  onEdit: (user: SystemUser) => void;
+  onDelete: (user: SystemUser) => void;
 }
 
 const UsersTable: React.FC<UsersTableProps> = ({ users, loading, onEdit, onDelete }) => {

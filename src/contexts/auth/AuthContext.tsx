@@ -1,200 +1,219 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { SystemUser, AuthState, LoginCredentials, RegisterCredentials } from '@/types/auth';
 import { toast } from '@/components/ui/use-toast';
 
-interface AuthContextType {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+interface AuthContextType extends AuthState {
+  signIn: (credentials: LoginCredentials) => Promise<void>;
+  signUp: (credentials: RegisterCredentials) => Promise<void>;
   signOut: () => Promise<void>;
-  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const cleanupAuthState = () => {
-  // Remove supabase auth tokens
-  localStorage.removeItem('supabase.auth.token');
-  
-  // Remove all Supabase auth keys from localStorage
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-      localStorage.removeItem(key);
-    }
-  });
-  
-  // Remove from sessionStorage if in use
-  Object.keys(sessionStorage || {}).forEach((key) => {
-    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-      sessionStorage.removeItem(key);
-    }
-  });
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    loading: true,
+    error: null
+  });
 
+  // Check if user is already authenticated on load
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state change event:", event);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Only show toast for sign in and sign out events
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Bem-vindo de volta!",
-            description: "Login realizado com sucesso.",
+    const checkAuth = async () => {
+      try {
+        // Attempt to get session from localStorage
+        const storedUser = localStorage.getItem('wireguard_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setState({
+            user,
+            isAuthenticated: true,
+            loading: false,
+            error: null
           });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Até logo!",
-            description: "Você saiu do sistema com sucesso.",
-          });
+          console.log('User restored from storage:', user.email);
+        } else {
+          setState(prev => ({ ...prev, loading: false }));
         }
+      } catch (error) {
+        console.error('Error checking authentication status:', error);
+        setState({
+          user: null,
+          isAuthenticated: false,
+          loading: false,
+          error: 'Failed to restore session'
+        });
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session ? "Logged in" : "Not logged in");
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
+
+    checkAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (credentials: LoginCredentials) => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      setLoading(true);
-      
-      // Clean up existing auth state first
-      cleanupAuthState();
-      
-      // Attempt to sign out globally, in case of lingering session
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-        console.log("Global sign out failed, continuing with sign in");
-      }
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Query the system_users table for the user with matching email
+      const { data, error } = await supabase
+        .from('system_users')
+        .select('*')
+        .eq('email', credentials.email)
+        .single();
 
       if (error) {
-        throw error;
+        throw new Error('User not found');
       }
-      
-      console.log("Sign in successful:", data.user?.email);
-      // No need to manually set session/user here as the onAuthStateChange listener will handle it
-      
-      // Force page reload for a clean state
-      window.location.href = '/';
-      
-    } catch (error: any) {
-      console.error("Sign in error:", error.message);
+
+      // Compare the password hash (in a real system, we'd use bcrypt or similar)
+      // For now, we'll use a simple check since we can't do real password hashing on the client
+      if (data.password_hash !== credentials.password) {
+        throw new Error('Invalid password');
+      }
+
+      // Map database user to our SystemUser type
+      const user: SystemUser = {
+        id: data.id,
+        email: data.email,
+        isAdmin: data.is_admin,
+        created_at: data.created_at
+      };
+
+      // Store user in localStorage
+      localStorage.setItem('wireguard_user', JSON.stringify(user));
+
+      setState({
+        user,
+        isAuthenticated: true,
+        loading: false,
+        error: null
+      });
+
       toast({
-        title: "Erro ao entrar",
-        description: error.message || "Não foi possível fazer login. Verifique suas credenciais.",
+        title: "Login bem-sucedido",
+        description: `Bem-vindo, ${user.email}!`,
+      });
+
+      // Redirect to home after successful login
+      window.location.href = '/';
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message || 'Falha no login'
+      }));
+      toast({
+        title: "Erro no login",
+        description: error.message || "Credenciais inválidas",
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (credentials: RegisterCredentials) => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      setLoading(true);
-      
-      // Clean up existing auth state first
-      cleanupAuthState();
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      // First check if user already exists
+      const { data: existingUser } = await supabase
+        .from('system_users')
+        .select('id')
+        .eq('email', credentials.email)
+        .maybeSingle();
+
+      if (existingUser) {
+        throw new Error('Este email já está em uso');
+      }
+
+      // Create new user
+      const { data, error } = await supabase
+        .from('system_users')
+        .insert({
+          email: credentials.email,
+          password_hash: credentials.password, // In a real app, hash this password
+          is_admin: false // New users are not admins by default
+        })
+        .select()
+        .single();
 
       if (error) {
-        throw error;
+        throw new Error('Erro ao criar conta: ' + error.message);
       }
-      
-      console.log("Sign up successful:", data);
+
+      // Map database user to our SystemUser type
+      const user: SystemUser = {
+        id: data.id,
+        email: data.email,
+        isAdmin: data.is_admin,
+        created_at: data.created_at
+      };
+
       toast({
-        title: "Conta criada",
-        description: "Sua conta foi criada com sucesso! Verifique seu email para confirmação.",
+        title: "Conta criada com sucesso",
+        description: "Você foi registrado e autenticado no sistema",
       });
+
+      // Automatically log the user in
+      localStorage.setItem('wireguard_user', JSON.stringify(user));
       
-      // Force page reload for a clean state
-      window.location.href = '/';
-      
+      setState({
+        user,
+        isAuthenticated: true,
+        loading: false,
+        error: null
+      });
     } catch (error: any) {
-      console.error("Sign up error:", error.message);
+      console.error('Registration error:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message || 'Falha no registro'
+      }));
       toast({
-        title: "Erro ao criar conta",
-        description: error.message || "Não foi possível criar sua conta.",
+        title: "Erro no registro",
+        description: error.message || "Não foi possível criar sua conta",
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      setLoading(true);
+      // Clear authentication from localStorage
+      localStorage.removeItem('wireguard_user');
       
-      // Clean up auth state
-      cleanupAuthState();
-      
-      // Attempt global sign out (fallback if it fails)
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Ignore errors
-        console.log("Global sign out failed");
-      }
-      
-      // Force page reload for a clean state
+      setState({
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        error: null
+      });
+
+      toast({
+        title: "Logout realizado",
+        description: "Você saiu do sistema com sucesso",
+      });
+
+      // Redirect to login page
       window.location.href = '/auth';
-      
     } catch (error: any) {
-      console.error("Sign out error:", error.message);
+      console.error('Logout error:', error);
       toast({
         title: "Erro ao sair",
-        description: error.message || "Não foi possível sair do sistema.",
+        description: error.message || "Não foi possível sair do sistema",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const value = {
-    session,
-    user,
-    loading,
+    ...state,
     signIn,
     signUp,
-    signOut,
-    isAuthenticated: !!user,
+    signOut
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

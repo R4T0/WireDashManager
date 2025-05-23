@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { User } from '@/types/user';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SystemUser } from '@/types/auth';
 
 // Schema for form validation
 const userFormSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').or(z.string().length(0)).optional(),
   isAdmin: z.boolean().default(false)
 });
 
@@ -21,7 +22,7 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentUser: User | null;
+  currentUser: SystemUser | null;
   onSubmit: (values: UserFormValues) => Promise<void>;
 }
 
@@ -31,8 +32,14 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
   currentUser, 
   onSubmit 
 }) => {
+  const isEditing = !!currentUser;
+  
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(
+      isEditing 
+        ? userFormSchema.partial({ password: true }) // Make password optional when editing
+        : userFormSchema // Require password for new users
+    ),
     defaultValues: {
       email: currentUser?.email || '',
       password: '',
@@ -45,7 +52,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
     if (currentUser) {
       form.reset({
         email: currentUser.email,
-        password: '',
+        password: '', // Don't show password when editing
         isAdmin: currentUser.isAdmin
       });
     } else {
@@ -56,6 +63,10 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
       });
     }
   }, [currentUser, form]);
+  
+  const handleSubmit = async (values: UserFormValues) => {
+    await onSubmit(values);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,7 +79,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -83,21 +94,19 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
               )}
             />
             
-            {!currentUser && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isEditing ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="******" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
@@ -105,10 +114,9 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                   <FormControl>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={field.value}
-                      onChange={field.onChange}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <FormLabel>Usuário Administrador</FormLabel>
