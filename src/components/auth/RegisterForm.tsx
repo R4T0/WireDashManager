@@ -43,7 +43,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       setError(null);
-      await signUp(values);
+      // Make sure we pass the required email and password
+      await signUp({
+        email: values.email,
+        password: values.password,
+        confirmPassword: values.confirmPassword
+      });
       onSuccess();
     } catch (error: any) {
       console.error('Erro no registro:', error);

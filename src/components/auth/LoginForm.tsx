@@ -38,7 +38,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       setError(null);
-      await signIn(values);
+      // Make sure we pass the required email and password
+      await signIn({
+        email: values.email,
+        password: values.password
+      });
       onSuccess();
     } catch (error: any) {
       console.error('Erro no login:', error);
