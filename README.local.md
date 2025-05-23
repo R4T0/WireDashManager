@@ -1,153 +1,124 @@
 
-# Executando o Projeto Localmente
+# WireDash - Configuração Local com Docker
 
-Este documento contém instruções para executar o projeto em ambiente local, utilizando PostgreSQL local em vez de Supabase externo.
+Este documento contém instruções para configurar e executar o WireDash em ambiente local usando Docker e PostgreSQL.
 
 ## Pré-requisitos
 
 - [Node.js](https://nodejs.org/) (v18 ou superior)
 - [Docker](https://www.docker.com/products/docker-desktop/)
-- [Docker Compose](https://docs.docker.com/compose/install/) (geralmente vem com Docker Desktop)
-- [PostgreSQL](https://www.postgresql.org/download/) (opcional se usar Docker)
+- [Docker Compose](https://docs.docker.com/compose/install/) (geralmente incluído no Docker Desktop)
+- [Git](https://git-scm.com/downloads) (para clonar o repositório)
 
-## Configuração do PostgreSQL Local
+## Passos para Instalação
 
-### Opção 1: Usando Docker
+### 1. Clonar o Repositório
 
-1. Crie um arquivo `docker-compose.yml` na raiz do projeto:
-
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:16
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: wireguard_manager
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+```bash
+git clone <URL_DO_REPOSITÓRIO>
+cd wiredash
 ```
 
-2. Inicie o PostgreSQL:
+### 2. Configurar o Ambiente Local
+
+#### Iniciar o PostgreSQL com Docker
+
+O projeto já inclui um arquivo `docker-compose.yml` configurado com PostgreSQL. Para iniciar o banco de dados:
 
 ```bash
 docker compose up -d
 ```
 
-### Opção 2: Supabase Local
+Este comando irá:
 
-O Supabase oferece uma versão local para desenvolvimento:
+- Iniciar um container PostgreSQL na porta 5432
+- Criar o banco de dados 'wireguard_manager'
+- Executar automaticamente o script de inicialização `init-db.sql`
+- Configurar persistência de dados através de um volume Docker
 
-1. Instale a CLI do Supabase:
-
-```bash
-npm install -g supabase
-```
-
-2. Inicialize o Supabase:
+Você pode verificar se o container está rodando com:
 
 ```bash
-supabase init
+docker ps
 ```
 
-3. Inicie os serviços locais:
+E verificar os logs com:
 
 ```bash
-supabase start
+docker logs -f wiredash-postgres-1
 ```
 
-4. Ao concluir o desenvolvimento, você pode parar os serviços:
+### 3. Configurar Variáveis de Ambiente
 
-```bash
-supabase stop
-```
-
-## Configuração do Projeto
-
-1. Crie um arquivo `.env.local` na raiz do projeto:
+Crie um arquivo `.env.local` na raiz do projeto:
 
 ```
+VITE_USE_LOCAL_SUPABASE=true
 VITE_SUPABASE_URL=http://localhost:54321
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 ```
 
-2. Modifique o arquivo de cliente do Supabase:
-
-Crie um arquivo `src/integrations/supabase/client.local.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
-
-// Obter variáveis do arquivo .env.local
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
-```
-
-3. Crie um arquivo `init-db.sql` para criar as tabelas necessárias:
-
-```sql
--- Criar tabela mikrotik_config
-CREATE TABLE IF NOT EXISTS public.mikrotik_config (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  address VARCHAR NOT NULL,
-  port VARCHAR NOT NULL,
-  username VARCHAR NOT NULL,
-  password VARCHAR NOT NULL,
-  use_https BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Criar tabela wireguard_defaults
-CREATE TABLE IF NOT EXISTS public.wireguard_defaults (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  endpoint VARCHAR,
-  port VARCHAR,
-  dns VARCHAR,
-  allowed_ip_range VARCHAR,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-## Executando o Projeto
-
-1. Instale as dependências:
+### 4. Instalar Dependências e Iniciar o Aplicativo
 
 ```bash
 npm install
-```
-
-2. Inicie o servidor de desenvolvimento:
-
-```bash
 npm run dev
 ```
 
-3. Acesse o projeto em [http://localhost:8080](http://localhost:8080)
+O aplicativo estará disponível em [http://localhost:8080](http://localhost:8080)
 
-## Alternando entre Supabase Local e Remoto
+## Conectando ao PostgreSQL
 
-Para alternar entre o Supabase local e remoto, você pode criar um utilitário que seleciona o cliente correto:
+Você pode se conectar diretamente ao banco de dados PostgreSQL usando:
 
-```typescript
-// src/integrations/supabase/index.ts
-import { supabase as supabaseRemote } from './client';
-import { supabase as supabaseLocal } from './client.local';
+- Host: localhost
+- Porta: 5432
+- Usuário: postgres
+- Senha: postgres
+- Banco de dados: wireguard_manager
 
-const USE_LOCAL = import.meta.env.VITE_USE_LOCAL_SUPABASE === 'true';
+### Usando uma ferramenta visual
 
-export const supabase = USE_LOCAL ? supabaseLocal : supabaseRemote;
+Você pode usar ferramentas como [pgAdmin](https://www.pgadmin.org/) ou [DBeaver](https://dbeaver.io/) para se conectar ao banco de dados.
+
+## Estrutura do Banco de Dados
+
+O script `init-db.sql` cria automaticamente as tabelas necessárias:
+
+1. `mikrotik_config` - Armazena as configurações de conexão do Mikrotik Router
+2. `wireguard_defaults` - Armazena as configurações padrões do WireGuard
+3. `system_users` - Gerencia os usuários do sistema
+
+## Alternando entre PostgreSQL Local e Supabase
+
+O projeto está configurado para usar o cliente local quando a variável de ambiente `VITE_USE_LOCAL_SUPABASE` está definida como `true` no arquivo `.env.local`.
+
+Para usar o Supabase remoto, remova esta variável ou defina como `false`.
+
+## Backup e Restauração de Dados
+
+### Para fazer backup do banco de dados:
+
+```bash
+docker exec -t wiredash-postgres-1 pg_dump -U postgres wireguard_manager > backup.sql
 ```
 
-E então importar de `@/integrations/supabase` em vez de `@/integrations/supabase/client`.
+### Para restaurar o banco de dados a partir de um backup:
+
+```bash
+cat backup.sql | docker exec -i wiredash-postgres-1 psql -U postgres -d wireguard_manager
+```
+
+## Solução de Problemas
+
+### Erro de conexão com o banco de dados:
+- Verifique se o container Docker está rodando: `docker ps`
+- Verifique os logs do container: `docker logs wiredash-postgres-1`
+- Certifique-se que a porta 5432 não está sendo usada por outra instância do PostgreSQL
+
+### Erros de autenticação:
+- Verifique se as credenciais no arquivo `.env.local` estão corretas
+- Para o PostgreSQL local, as credenciais padrão são `postgres/postgres`
+
+### O script de inicialização não foi executado:
+- Você pode executar manualmente o script: `cat init-db.sql | docker exec -i wiredash-postgres-1 psql -U postgres -d wireguard_manager`
