@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/auth/AuthContext';
-import { LogIn } from 'lucide-react';
+import { LogIn, KeyRound, Mail } from 'lucide-react';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -55,7 +55,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   return (
     <div className="space-y-4">
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="bg-destructive/20 border-destructive/40 text-destructive-foreground">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -67,9 +67,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="text-wireguard-foreground/90">Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="seu@email.com" {...field} />
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-wireguard-muted-foreground" />
+                    <Input 
+                      placeholder="seu@email.com" 
+                      className="bg-wireguard/30 border-white/10 pl-10" 
+                      {...field} 
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -81,18 +88,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel className="text-wireguard-foreground/90">Senha</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••" {...field} />
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-2.5 h-5 w-5 text-wireguard-muted-foreground" />
+                    <Input 
+                      type="password" 
+                      placeholder="••••••" 
+                      className="bg-wireguard/30 border-white/10 pl-10" 
+                      {...field} 
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button 
+            type="submit" 
+            className="w-full bg-wireguard-primary hover:bg-wireguard-primary/90 text-wireguard font-medium transition-all" 
+            disabled={loading}
+          >
             {loading ? (
-              <>Entrando...</>
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></div>
+                Entrando...
+              </>
             ) : (
               <>
                 <LogIn className="mr-2 h-4 w-4" />

@@ -10,38 +10,42 @@ import UserManagementSettings from '@/components/settings/UserManagementSettings
 
 const Settings = () => {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
       <SettingsHeader />
       
-      <Tabs defaultValue="mikrotik">
-        <TabsList className="mb-6">
-          <TabsTrigger value="mikrotik">Conexão Mikrotik</TabsTrigger>
-          <TabsTrigger value="defaults">Configuração Padrão</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="logs">Logs do Sistema</TabsTrigger>
-          <TabsTrigger value="debug">Diagnóstico</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="mikrotik">
-          <MikrotikConnectionSettings />
-        </TabsContent>
-        
-        <TabsContent value="defaults">
-          <WireguardDefaultSettings />
-        </TabsContent>
-        
-        <TabsContent value="users">
-          <UserManagementSettings />
-        </TabsContent>
-        
-        <TabsContent value="logs">
-          <LogViewer />
-        </TabsContent>
-        
-        <TabsContent value="debug">
-          <ConnectionDebugger />
-        </TabsContent>
-      </Tabs>
+      <div className="bg-wireguard/40 backdrop-blur-sm rounded-lg border border-white/10 p-1">
+        <Tabs defaultValue="mikrotik" className="w-full">
+          <TabsList className="w-full grid grid-cols-5 mb-6 bg-wireguard/40 p-1 gap-1">
+            <TabsTrigger value="mikrotik" className="text-sm">Conexão Mikrotik</TabsTrigger>
+            <TabsTrigger value="defaults" className="text-sm">WireGuard</TabsTrigger>
+            <TabsTrigger value="users" className="text-sm">Usuários</TabsTrigger>
+            <TabsTrigger value="logs" className="text-sm">Logs</TabsTrigger>
+            <TabsTrigger value="debug" className="text-sm">Diagnóstico</TabsTrigger>
+          </TabsList>
+          
+          <div className="p-4">
+            <TabsContent value="mikrotik" className="mt-0 animate-slideIn">
+              <MikrotikConnectionSettings />
+            </TabsContent>
+            
+            <TabsContent value="defaults" className="mt-0 animate-slideIn">
+              <WireguardDefaultSettings />
+            </TabsContent>
+            
+            <TabsContent value="users" className="mt-0 animate-slideIn">
+              <UserManagementSettings />
+            </TabsContent>
+            
+            <TabsContent value="logs" className="mt-0 animate-slideIn">
+              <LogViewer />
+            </TabsContent>
+            
+            <TabsContent value="debug" className="mt-0 animate-slideIn">
+              <ConnectionDebugger />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 };

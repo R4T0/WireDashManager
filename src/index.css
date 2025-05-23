@@ -45,6 +45,25 @@
   body {
     @apply bg-wireguard text-wireguard-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.03) 0%, rgba(13, 20, 36, 0) 100%);
+  }
+
+  /* Melhorar as scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-wireguard;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-wireguard-muted rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-wireguard-primary/50;
   }
 }
 
@@ -69,11 +88,11 @@
 }
 
 .form-input {
-  @apply w-full rounded-md bg-wireguard-muted border-wireguard-muted/50 text-wireguard-foreground shadow-sm focus:border-wireguard-primary focus:ring-wireguard-primary;
+  @apply w-full rounded-md bg-wireguard/50 border-white/10 text-wireguard-foreground backdrop-blur-sm shadow-sm focus:border-wireguard-primary focus:ring-wireguard-primary;
 }
 
 .form-button {
-  @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-wireguard-primary/50 focus:ring-offset-2 focus:ring-offset-wireguard disabled:opacity-50;
+  @apply px-4 py-2 rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-wireguard-primary/50 focus:ring-offset-2 focus:ring-offset-wireguard disabled:opacity-50;
 }
 
 .primary-button {
@@ -81,5 +100,29 @@
 }
 
 .secondary-button {
-  @apply form-button bg-wireguard-muted text-wireguard-foreground hover:bg-wireguard-muted/80;
+  @apply form-button bg-wireguard/50 border border-white/10 text-wireguard-foreground hover:bg-wireguard-muted/80;
+}
+
+/* Animações */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s infinite;
+}
+
+/* Cards com gradientes sutis */
+.gradient-card {
+  @apply relative overflow-hidden;
+}
+
+.gradient-card::before {
+  content: '';
+  @apply absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-wireguard-primary to-wireguard-primary/0;
 }

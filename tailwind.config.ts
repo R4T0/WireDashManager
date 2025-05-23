@@ -54,9 +54,9 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         wireguard: {
-          DEFAULT: "#0F172A", // Main background
+          DEFAULT: "#0F172A", // Main background (dark blue)
           foreground: "#E2E8F0", // Text color
-          primary: "#38BDF8", // Primary accent color
+          primary: "#38BDF8", // Primary accent color (logo blue)
           secondary: "#0EA5E9", // Secondary accent color 
           success: "#22C55E", // Success indicators
           error: "#EF4444",  // Error indicators
@@ -78,10 +78,23 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideIn: {
+          "0%": { transform: "translateY(10px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fadeIn": "fadeIn 0.3s ease-out",
+        "slideIn": "slideIn 0.3s ease-out",
+      },
+      boxShadow: {
+        glow: "0 0 15px rgba(56, 189, 248, 0.3)",
       },
     },
   },
