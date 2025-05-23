@@ -1,24 +1,21 @@
+# Etapa de build com Bun
+FROM oven/bun:1.1 AS builder
 
-# Multi-stage build para WireDash
-FROM node:18-alpine as builder
-
-# Definir diretório de trabalho
 WORKDIR /app
 
 # Copiar arquivos de dependências
-COPY package*.json ./
-COPY bun.lockb ./
+COPY bun.lockb package.json ./
 
 # Instalar dependências
-RUN npm ci --only=production
+RUN bun install
 
-# Copiar código fonte
+# Copiar o restante do código-fonte
 COPY . .
 
 # Build da aplicação
-RUN npm run build
+RUN bun run build
 
-# Estágio de produção
+# Etapa de produção com Nginx
 FROM nginx:alpine
 
 # Copiar configuração customizada do Nginx
@@ -29,6 +26,3 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expor porta 80
 EXPOSE 80
-
-# Comando para iniciar o Nginx
-CMD ["nginx", "-g", "daemon off;"]
