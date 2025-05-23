@@ -1,13 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Settings, Users, Network, FileText, QrCode, LayoutDashboard, Bell, User } from 'lucide-react';
+import { Settings, Users, Network, FileText, QrCode, LayoutDashboard, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/auth/AuthContext';
+import UserMenu from '@/components/Layout/UserMenu';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +13,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState<string>(new Date().toLocaleTimeString());
   const [currentDate, setCurrentDate] = useState<string>(new Date().toLocaleDateString('pt-BR', { 
     weekday: 'long', 
@@ -120,23 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="text-xs text-wireguard-muted-foreground">{currentDate}</div>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8 border border-white/10">
-                    <AvatarFallback className="bg-wireguard-primary/20 text-wireguard-primary">
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuItem>Perfil</DropdownMenuItem>
-                <DropdownMenuItem>Preferências</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">Sair</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu />
           </div>
         </header>
 

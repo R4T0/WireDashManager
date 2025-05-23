@@ -24,6 +24,10 @@ const UserMenu = () => {
     return "US";
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -52,7 +56,7 @@ const UserMenu = () => {
                 <span>Configurações</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50">
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>
