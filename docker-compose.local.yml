@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -24,11 +23,9 @@ services:
     networks:
       - wiredash-network
 
-  # WireDash Application
+  # WireDash Application (isolado do código local)
   wiredash-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
+    image: wiredash-app:latest
     container_name: wiredash-app
     restart: unless-stopped
     ports:
@@ -40,6 +37,7 @@ services:
         condition: service_healthy
     networks:
       - wiredash-network
+    # Nenhum volume montado — código 100% isolado
 
 volumes:
   postgres_data:
