@@ -29,13 +29,8 @@ const UserManagementSettings = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Handle response based on type
-      let result: any;
-      if (typeof response.then === 'function') {
-        result = await response;
-      } else {
-        result = response;
-      }
+      // Simplified response handling
+      const result = response;
       
       if (result.error) {
         console.error('Erro ao buscar usuários:', result.error);
@@ -92,19 +87,11 @@ const UserManagementSettings = () => {
           updateData.password_hash = values.password;
         }
         
-        const updateResponse = await supabase
+        const result = await supabase
           .from('system_users')
           .update(updateData)
           .eq('id', currentUser.id)
           .select();
-        
-        // Handle response
-        let result: any;
-        if (typeof updateResponse.then === 'function') {
-          result = await updateResponse;
-        } else {
-          result = updateResponse;
-        }
         
         if (result.error) throw result.error;
         
@@ -116,25 +103,17 @@ const UserManagementSettings = () => {
         console.log('Criando novo usuário:', values.email);
         
         // Check if user already exists
-        const existingResponse = await supabase
+        const existingResult = await supabase
           .from('system_users')
           .select('id')
           .eq('email', values.email);
-
-        // Handle response
-        let existingResult: any;
-        if (typeof existingResponse.then === 'function') {
-          existingResult = await existingResponse;
-        } else {
-          existingResult = existingResponse;
-        }
 
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Create new user
-        const insertResponse = await supabase
+        const result = await supabase
           .from('system_users')
           .insert({
             email: values.email,
@@ -142,14 +121,6 @@ const UserManagementSettings = () => {
             is_admin: values.isAdmin
           })
           .select();
-        
-        // Handle response
-        let result: any;
-        if (typeof insertResponse.then === 'function') {
-          result = await insertResponse;
-        } else {
-          result = insertResponse;
-        }
         
         if (result.error) throw result.error;
         
@@ -176,18 +147,10 @@ const UserManagementSettings = () => {
     try {
       console.log('Removendo usuário:', user.email);
       
-      const deleteResponse = await supabase
+      const result = await supabase
         .from('system_users')
         .delete()
         .eq('id', user.id);
-      
-      // Handle response
-      let result: any;
-      if (typeof deleteResponse.then === 'function') {
-        result = await deleteResponse;
-      } else {
-        result = deleteResponse;
-      }
       
       if (result.error) throw result.error;
       
