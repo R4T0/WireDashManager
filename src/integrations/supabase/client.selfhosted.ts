@@ -21,16 +21,24 @@ interface InsertBuilder {
 }
 
 interface UpdateBuilder {
-  eq: (column: string, value: any) => UpdateBuilder;
-  select: (columns?: string) => Promise<SupabaseResponse<any>>;
+  eq: (column: string, value: any) => {
+    select: (columns?: string) => Promise<SupabaseResponse<any>>;
+  };
 }
 
 interface DeleteBuilder {
   eq: (column: string, value: any) => Promise<SupabaseResponse<any>>;
 }
 
+interface TableBuilder {
+  select: (columns?: string) => any;
+  insert: (data: any) => InsertBuilder;
+  update: (data: any) => UpdateBuilder;
+  delete: () => DeleteBuilder;
+}
+
 interface SelfHostedClient {
-  from: (table: string) => any;
+  from: (table: string) => TableBuilder;
   auth: {
     signUp: (credentials: any) => Promise<SupabaseResponse<any>>;
     signInWithPassword: (credentials: any) => Promise<SupabaseResponse<any>>;
@@ -46,46 +54,43 @@ interface SelfHostedClient {
 class SelfHostedSupabaseClient implements SelfHostedClient {
   private apiUrl = '/api';
 
-  from(table: string) {
+  from(table: string): TableBuilder {
     const self = this;
     
     return {
       select: (columns = '*') => {
-        const queryBuilder: QueryBuilder = {
+        const baseQuery = `/${table}?select=${columns}`;
+        
+        const queryBuilder = {
           eq: (column: string, value: any) => {
+            const query = `${baseQuery}&${column}=eq.${value}`;
             return {
               ...queryBuilder,
-              single: () => self.query('GET', `/${table}?${column}=eq.${value}&select=${columns}&limit=1`).then(data => ({
+              single: () => self.query('GET', `${query}&limit=1`).then(data => ({
                 data: data[0] || null,
                 error: null
               })),
-              maybeSingle: () => self.query('GET', `/${table}?${column}=eq.${value}&select=${columns}&limit=1`).then(data => ({
+              maybeSingle: () => self.query('GET', `${query}&limit=1`).then(data => ({
                 data: data[0] || null,
                 error: null
               }))
             };
           },
-          order: (column: string, options: any) => ({
-            ...queryBuilder,
-            eq: queryBuilder.eq
-          }),
-          limit: (count: number) => ({
-            ...queryBuilder,
-            eq: queryBuilder.eq
-          }),
-          single: () => self.query('GET', `/${table}?select=${columns}&limit=1`).then(data => ({
+          order: (column: string, options: any) => queryBuilder,
+          limit: (count: number) => queryBuilder,
+          single: () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
             data: data[0] || null,
             error: null
           })),
-          maybeSingle: () => self.query('GET', `/${table}?select=${columns}&limit=1`).then(data => ({
+          maybeSingle: () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
             data: data[0] || null,
             error: null
           })),
           select: () => queryBuilder
         };
         
-        // Return a promise that resolves to the data for direct usage
-        const promise = self.query('GET', `/${table}?select=${columns}`).then(data => ({
+        // Create a promise that resolves to the data
+        const promise = self.query('GET', baseQuery).then(data => ({
           data,
           error: null
         }));
@@ -93,40 +98,31 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
         // Attach query builder methods to the promise
         Object.assign(promise, queryBuilder);
         
-        return promise as any;
+        return promise;
       },
       
-      insert: (data: any) => {
-        const insertBuilder: InsertBuilder = {
-          select: (columns = '*') => self.query('POST', `/${table}`, data).then(result => ({
+      insert: (data: any): InsertBuilder => ({
+        select: (columns = '*') => self.query('POST', `/${table}`, data).then(result => ({
+          data: result,
+          error: null
+        }))
+      }),
+      
+      update: (data: any): UpdateBuilder => ({
+        eq: (column: string, value: any) => ({
+          select: (columns = '*') => self.query('PATCH', `/${table}?${column}=eq.${value}`, data).then(result => ({
             data: result,
             error: null
           }))
-        };
-        return insertBuilder;
-      },
+        })
+      }),
       
-      update: (data: any) => {
-        const updateBuilder: UpdateBuilder = {
-          eq: (column: string, value: any) => ({
-            select: (columns = '*') => self.query('PATCH', `/${table}?${column}=eq.${value}`, data).then(result => ({
-              data: result,
-              error: null
-            }))
-          })
-        };
-        return updateBuilder;
-      },
-      
-      delete: () => {
-        const deleteBuilder: DeleteBuilder = {
-          eq: (column: string, value: any) => self.query('DELETE', `/${table}?${column}=eq.${value}`).then(() => ({
-            data: null,
-            error: null
-          }))
-        };
-        return deleteBuilder;
-      }
+      delete: (): DeleteBuilder => ({
+        eq: (column: string, value: any) => self.query('DELETE', `/${table}?${column}=eq.${value}`).then(() => ({
+          data: null,
+          error: null
+        }))
+      })
     };
   }
 

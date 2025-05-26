@@ -39,7 +39,7 @@ const UserManagementSettings = () => {
       console.log(`Encontrado(s) ${usersData?.length || 0} usuário(s)`);
       
       // Map database users to our SystemUser type
-      const mappedUsers = usersData ? usersData.map(user => ({
+      const mappedUsers = usersData ? usersData.map((user: any) => ({
         id: user.id,
         email: user.email,
         isAdmin: user.is_admin,
