@@ -2,17 +2,44 @@
 // Cliente simplificado para modo self-hosted
 // Este arquivo simula a interface do Supabase para manter compatibilidade
 
+interface SupabaseResponse<T> {
+  data: T;
+  error: any;
+}
+
+interface QueryBuilder {
+  eq: (column: string, value: any) => QueryBuilder;
+  order: (column: string, options: any) => QueryBuilder;
+  limit: (count: number) => QueryBuilder;
+  single: () => Promise<SupabaseResponse<any>>;
+  maybeSingle: () => Promise<SupabaseResponse<any>>;
+  select: (columns?: string) => QueryBuilder;
+}
+
+interface InsertBuilder {
+  select: (columns?: string) => Promise<SupabaseResponse<any>>;
+}
+
+interface UpdateBuilder {
+  eq: (column: string, value: any) => UpdateBuilder;
+  select: (columns?: string) => Promise<SupabaseResponse<any>>;
+}
+
+interface DeleteBuilder {
+  eq: (column: string, value: any) => Promise<SupabaseResponse<any>>;
+}
+
 interface SelfHostedClient {
   from: (table: string) => any;
   auth: {
-    signUp: (credentials: any) => Promise<any>;
-    signInWithPassword: (credentials: any) => Promise<any>;
-    signOut: () => Promise<any>;
-    getSession: () => Promise<any>;
+    signUp: (credentials: any) => Promise<SupabaseResponse<any>>;
+    signInWithPassword: (credentials: any) => Promise<SupabaseResponse<any>>;
+    signOut: () => Promise<SupabaseResponse<any>>;
+    getSession: () => Promise<SupabaseResponse<any>>;
     onAuthStateChange: (callback: any) => any;
   };
   functions: {
-    invoke: (name: string, options: any) => Promise<any>;
+    invoke: (name: string, options: any) => Promise<SupabaseResponse<any>>;
   };
 }
 
@@ -20,50 +47,170 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
   private apiUrl = '/api';
 
   from(table: string) {
+    const self = this;
+    
     return {
-      select: (columns = '*') => ({
-        eq: (column: string, value: any) => this.query('GET', `/${table}?${column}=eq.${value}&select=${columns}`),
-        order: (column: string, options: any) => this.query('GET', `/${table}?select=${columns}&order=${column}.${options.ascending ? 'asc' : 'desc'}`),
-        limit: (count: number) => this.query('GET', `/${table}?select=${columns}&limit=${count}`),
-        single: () => this.query('GET', `/${table}?select=${columns}&limit=1`).then(data => data[0]),
-        maybeSingle: () => this.query('GET', `/${table}?select=${columns}&limit=1`).then(data => data[0] || null),
-      }),
-      insert: (data: any) => ({
-        select: () => this.query('POST', `/${table}`, data)
-      }),
-      update: (data: any) => ({
-        eq: (column: string, value: any) => ({
-          select: () => this.query('PATCH', `/${table}?${column}=eq.${value}`, data)
-        })
-      }),
-      delete: () => ({
-        eq: (column: string, value: any) => this.query('DELETE', `/${table}?${column}=eq.${value}`)
-      })
+      select: (columns = '*') => {
+        const queryBuilder: QueryBuilder = {
+          eq: (column: string, value: any) => {
+            return {
+              ...queryBuilder,
+              single: () => self.query('GET', `/${table}?${column}=eq.${value}&select=${columns}&limit=1`).then(data => ({
+                data: data[0] || null,
+                error: null
+              })),
+              maybeSingle: () => self.query('GET', `/${table}?${column}=eq.${value}&select=${columns}&limit=1`).then(data => ({
+                data: data[0] || null,
+                error: null
+              }))
+            };
+          },
+          order: (column: string, options: any) => ({
+            ...queryBuilder,
+            eq: queryBuilder.eq
+          }),
+          limit: (count: number) => ({
+            ...queryBuilder,
+            eq: queryBuilder.eq
+          }),
+          single: () => self.query('GET', `/${table}?select=${columns}&limit=1`).then(data => ({
+            data: data[0] || null,
+            error: null
+          })),
+          maybeSingle: () => self.query('GET', `/${table}?select=${columns}&limit=1`).then(data => ({
+            data: data[0] || null,
+            error: null
+          })),
+          select: () => queryBuilder
+        };
+        
+        // Return a promise that resolves to the data for direct usage
+        const promise = self.query('GET', `/${table}?select=${columns}`).then(data => ({
+          data,
+          error: null
+        }));
+        
+        // Attach query builder methods to the promise
+        Object.assign(promise, queryBuilder);
+        
+        return promise as any;
+      },
+      
+      insert: (data: any) => {
+        const insertBuilder: InsertBuilder = {
+          select: (columns = '*') => self.query('POST', `/${table}`, data).then(result => ({
+            data: result,
+            error: null
+          }))
+        };
+        return insertBuilder;
+      },
+      
+      update: (data: any) => {
+        const updateBuilder: UpdateBuilder = {
+          eq: (column: string, value: any) => ({
+            select: (columns = '*') => self.query('PATCH', `/${table}?${column}=eq.${value}`, data).then(result => ({
+              data: result,
+              error: null
+            }))
+          })
+        };
+        return updateBuilder;
+      },
+      
+      delete: () => {
+        const deleteBuilder: DeleteBuilder = {
+          eq: (column: string, value: any) => self.query('DELETE', `/${table}?${column}=eq.${value}`).then(() => ({
+            data: null,
+            error: null
+          }))
+        };
+        return deleteBuilder;
+      }
     };
   }
 
   auth = {
     signUp: async (credentials: { email: string; password: string }) => {
-      return this.query('POST', '/auth/signup', credentials);
+      try {
+        const result = await this.query('POST', '/auth/signup', credentials);
+        return {
+          data: { user: result },
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: { user: null },
+          error: { message: error.message }
+        };
+      }
     },
+    
     signInWithPassword: async (credentials: { email: string; password: string }) => {
-      return this.query('POST', '/auth/signin', credentials);
+      try {
+        const result = await this.query('POST', '/auth/signin', credentials);
+        return {
+          data: { user: result },
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: { user: null },
+          error: { message: error.message }
+        };
+      }
     },
+    
     signOut: async () => {
-      return this.query('POST', '/auth/signout');
+      try {
+        await this.query('POST', '/auth/signout');
+        return {
+          data: {},
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: {},
+          error: { message: error.message }
+        };
+      }
     },
+    
     getSession: async () => {
-      return this.query('GET', '/auth/session');
+      try {
+        const result = await this.query('GET', '/auth/session');
+        return {
+          data: { session: result },
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: { session: null },
+          error: { message: error.message }
+        };
+      }
     },
+    
     onAuthStateChange: (callback: any) => {
       // Implementação simplificada
-      return { unsubscribe: () => {} };
+      return { data: { subscription: { unsubscribe: () => {} } } };
     }
   };
 
   functions = {
     invoke: async (name: string, options: any) => {
-      return this.query('POST', `/functions/${name}`, options.body);
+      try {
+        const result = await this.query('POST', `/functions/${name}`, options.body);
+        return {
+          data: result,
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: null,
+          error: { message: error.message }
+        };
+      }
     }
   };
 

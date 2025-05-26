@@ -56,28 +56,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       // Query the system_users table for the user with matching email
-      const { data, error } = await supabase
+      const response = await supabase
         .from('system_users')
         .select('*')
-        .eq('email', credentials.email)
-        .single();
+        .eq('email', credentials.email);
+      
+      const { data, error } = await response;
 
-      if (error) {
+      if (error || !data || data.length === 0) {
         throw new Error('User not found');
       }
 
+      const userData = data[0];
+
       // Compare the password hash (in a real system, we'd use bcrypt or similar)
       // For now, we'll use a simple check since we can't do real password hashing on the client
-      if (data.password_hash !== credentials.password) {
+      if (userData.password_hash !== credentials.password) {
         throw new Error('Invalid password');
       }
 
       // Map database user to our SystemUser type
       const user: SystemUser = {
-        id: data.id,
-        email: data.email,
-        isAdmin: data.is_admin,
-        created_at: data.created_at
+        id: userData.id,
+        email: userData.email,
+        isAdmin: userData.is_admin,
+        created_at: userData.created_at
       };
 
       // Store user in localStorage
@@ -117,37 +120,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       // First check if user already exists
-      const { data: existingUser } = await supabase
+      const existingUserResponse = await supabase
         .from('system_users')
         .select('id')
-        .eq('email', credentials.email)
-        .maybeSingle();
+        .eq('email', credentials.email);
+      
+      const { data: existingData } = await existingUserResponse;
 
-      if (existingUser) {
+      if (existingData && existingData.length > 0) {
         throw new Error('Este email já está em uso');
       }
 
       // Create new user
-      const { data, error } = await supabase
+      const insertResponse = await supabase
         .from('system_users')
         .insert({
           email: credentials.email,
           password_hash: credentials.password, // In a real app, hash this password
           is_admin: false // New users are not admins by default
         })
-        .select()
-        .single();
+        .select();
+
+      const { data, error } = await insertResponse;
 
       if (error) {
         throw new Error('Erro ao criar conta: ' + error.message);
       }
 
+      const userData = data[0];
+
       // Map database user to our SystemUser type
       const user: SystemUser = {
-        id: data.id,
-        email: data.email,
-        isAdmin: data.is_admin,
-        created_at: data.created_at
+        id: userData.id,
+        email: userData.email,
+        isAdmin: userData.is_admin,
+        created_at: userData.created_at
       };
 
       toast({
