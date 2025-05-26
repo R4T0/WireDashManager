@@ -29,7 +29,13 @@ const UserManagementSettings = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      const result = await response;
+      // Handle response based on type
+      let result: any;
+      if (typeof response.then === 'function') {
+        result = await response;
+      } else {
+        result = response;
+      }
       
       if (result.error) {
         console.error('Erro ao buscar usuários:', result.error);
@@ -39,7 +45,7 @@ const UserManagementSettings = () => {
       console.log(`Encontrado(s) ${result.data?.length || 0} usuário(s)`);
       
       // Map database users to our SystemUser type
-      const mappedUsers = result.data ? result.data.map((user: any) => ({
+      const mappedUsers: SystemUser[] = result.data ? result.data.map((user: any) => ({
         id: user.id,
         email: user.email,
         isAdmin: user.is_admin,
@@ -92,7 +98,13 @@ const UserManagementSettings = () => {
           .eq('id', currentUser.id)
           .select();
         
-        const result = await updateResponse;
+        // Handle response
+        let result: any;
+        if (typeof updateResponse.then === 'function') {
+          result = await updateResponse;
+        } else {
+          result = updateResponse;
+        }
         
         if (result.error) throw result.error;
         
@@ -109,7 +121,13 @@ const UserManagementSettings = () => {
           .select('id')
           .eq('email', values.email);
 
-        const existingResult = await existingResponse;
+        // Handle response
+        let existingResult: any;
+        if (typeof existingResponse.then === 'function') {
+          existingResult = await existingResponse;
+        } else {
+          existingResult = existingResponse;
+        }
 
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
@@ -125,7 +143,13 @@ const UserManagementSettings = () => {
           })
           .select();
         
-        const result = await insertResponse;
+        // Handle response
+        let result: any;
+        if (typeof insertResponse.then === 'function') {
+          result = await insertResponse;
+        } else {
+          result = insertResponse;
+        }
         
         if (result.error) throw result.error;
         
@@ -157,7 +181,13 @@ const UserManagementSettings = () => {
         .delete()
         .eq('id', user.id);
       
-      const result = await deleteResponse;
+      // Handle response
+      let result: any;
+      if (typeof deleteResponse.then === 'function') {
+        result = await deleteResponse;
+      } else {
+        result = deleteResponse;
+      }
       
       if (result.error) throw result.error;
       
