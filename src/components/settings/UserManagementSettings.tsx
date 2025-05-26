@@ -24,13 +24,13 @@ const UserManagementSettings = () => {
     try {
       console.log('Buscando lista de usuários...');
       
-      const response = supabase
+      // Completely bypass type inference by using any
+      const response: any = supabase
         .from('system_users')
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Cast the entire response chain to avoid type complexity
-      const result: any = await response;
+      const result = await response;
       
       if (result.error) {
         console.error('Erro ao buscar usuários:', result.error);
@@ -87,12 +87,14 @@ const UserManagementSettings = () => {
           updateData.password_hash = values.password;
         }
         
-        // Simplified query execution
-        const updateResult: any = await supabase
+        // Simplified query execution with explicit typing
+        const updateResponse: any = supabase
           .from('system_users')
           .update(updateData)
           .eq('id', currentUser.id)
           .select();
+        
+        const updateResult = await updateResponse;
         
         if (updateResult.error) throw updateResult.error;
         
@@ -104,17 +106,19 @@ const UserManagementSettings = () => {
         console.log('Criando novo usuário:', values.email);
         
         // Check if user already exists
-        const existingResult: any = await supabase
+        const existingResponse: any = supabase
           .from('system_users')
           .select('id')
           .eq('email', values.email);
+
+        const existingResult = await existingResponse;
 
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Create new user
-        const insertResult: any = await supabase
+        const insertResponse: any = supabase
           .from('system_users')
           .insert({
             email: values.email,
@@ -122,6 +126,8 @@ const UserManagementSettings = () => {
             is_admin: values.isAdmin
           })
           .select();
+        
+        const insertResult = await insertResponse;
         
         if (insertResult.error) throw insertResult.error;
         
@@ -148,10 +154,12 @@ const UserManagementSettings = () => {
     try {
       console.log('Removendo usuário:', user.email);
       
-      const deleteResult: any = await supabase
+      const deleteResponse: any = supabase
         .from('system_users')
         .delete()
         .eq('id', user.id);
+      
+      const deleteResult = await deleteResponse;
       
       if (deleteResult.error) throw deleteResult.error;
       
