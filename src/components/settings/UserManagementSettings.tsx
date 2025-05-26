@@ -29,8 +29,8 @@ const UserManagementSettings = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Cast to any to avoid type complexity
-      const result = await (response as any);
+      // Cast the entire response chain to avoid type complexity
+      const result: any = await response;
       
       if (result.error) {
         console.error('Erro ao buscar usuários:', result.error);
@@ -87,15 +87,14 @@ const UserManagementSettings = () => {
           updateData.password_hash = values.password;
         }
         
-        const updateQuery = supabase
+        // Simplified query execution
+        const updateResult: any = await supabase
           .from('system_users')
           .update(updateData)
           .eq('id', currentUser.id)
           .select();
         
-        const result = await (updateQuery as any);
-        
-        if (result.error) throw result.error;
+        if (updateResult.error) throw updateResult.error;
         
         toast({
           title: 'Sucesso',
@@ -105,19 +104,17 @@ const UserManagementSettings = () => {
         console.log('Criando novo usuário:', values.email);
         
         // Check if user already exists
-        const existingQuery = supabase
+        const existingResult: any = await supabase
           .from('system_users')
           .select('id')
           .eq('email', values.email);
-
-        const existingResult = await (existingQuery as any);
 
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Create new user
-        const insertQuery = supabase
+        const insertResult: any = await supabase
           .from('system_users')
           .insert({
             email: values.email,
@@ -126,9 +123,7 @@ const UserManagementSettings = () => {
           })
           .select();
         
-        const result = await (insertQuery as any);
-        
-        if (result.error) throw result.error;
+        if (insertResult.error) throw insertResult.error;
         
         toast({
           title: 'Sucesso',
@@ -153,14 +148,12 @@ const UserManagementSettings = () => {
     try {
       console.log('Removendo usuário:', user.email);
       
-      const deleteQuery = supabase
+      const deleteResult: any = await supabase
         .from('system_users')
         .delete()
         .eq('id', user.id);
       
-      const result = await (deleteQuery as any);
-      
-      if (result.error) throw result.error;
+      if (deleteResult.error) throw deleteResult.error;
       
       toast({
         title: 'Sucesso',
