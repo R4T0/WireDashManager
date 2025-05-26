@@ -24,13 +24,13 @@ const UserManagementSettings = () => {
     try {
       console.log('Buscando lista de usuários...');
       
-      const response = await supabase
+      const response = supabase
         .from('system_users')
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Simplified response handling
-      const result = response;
+      // Cast to any to avoid type complexity
+      const result = await (response as any);
       
       if (result.error) {
         console.error('Erro ao buscar usuários:', result.error);
@@ -87,11 +87,13 @@ const UserManagementSettings = () => {
           updateData.password_hash = values.password;
         }
         
-        const result = await supabase
+        const updateQuery = supabase
           .from('system_users')
           .update(updateData)
           .eq('id', currentUser.id)
           .select();
+        
+        const result = await (updateQuery as any);
         
         if (result.error) throw result.error;
         
@@ -103,17 +105,19 @@ const UserManagementSettings = () => {
         console.log('Criando novo usuário:', values.email);
         
         // Check if user already exists
-        const existingResult = await supabase
+        const existingQuery = supabase
           .from('system_users')
           .select('id')
           .eq('email', values.email);
+
+        const existingResult = await (existingQuery as any);
 
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Create new user
-        const result = await supabase
+        const insertQuery = supabase
           .from('system_users')
           .insert({
             email: values.email,
@@ -121,6 +125,8 @@ const UserManagementSettings = () => {
             is_admin: values.isAdmin
           })
           .select();
+        
+        const result = await (insertQuery as any);
         
         if (result.error) throw result.error;
         
@@ -147,10 +153,12 @@ const UserManagementSettings = () => {
     try {
       console.log('Removendo usuário:', user.email);
       
-      const result = await supabase
+      const deleteQuery = supabase
         .from('system_users')
         .delete()
         .eq('id', user.id);
+      
+      const result = await (deleteQuery as any);
       
       if (result.error) throw result.error;
       
