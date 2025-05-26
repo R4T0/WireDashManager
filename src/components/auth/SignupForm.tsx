@@ -60,10 +60,10 @@ const SignupForm: React.FC<SignupFormProps> = ({
           })
           .select();
         
-        const { data, error } = await insertResponse;
+        const result = await insertResponse;
         
-        if (error) throw error;
-        userId = data[0]?.id;
+        if (result.error) throw result.error;
+        userId = result.data[0]?.id;
       } else {
         // Caso não seja o primeiro usuário, primeiro verificamos se já existe
         const existingResponse = await supabase
@@ -71,9 +71,9 @@ const SignupForm: React.FC<SignupFormProps> = ({
           .select('id')
           .eq('email', email);
         
-        const { data: existingData } = await existingResponse;
+        const existingResult = await existingResponse;
         
-        if (existingData && existingData.length > 0) {
+        if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
@@ -87,10 +87,10 @@ const SignupForm: React.FC<SignupFormProps> = ({
           })
           .select();
         
-        const { data, error } = await insertResponse;
+        const result = await insertResponse;
         
-        if (error) throw error;
-        userId = data[0]?.id;
+        if (result.error) throw result.error;
+        userId = result.data[0]?.id;
       }
       
       if (userId) {

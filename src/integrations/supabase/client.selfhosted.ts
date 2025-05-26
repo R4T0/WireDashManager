@@ -3,7 +3,7 @@
 // Este arquivo simula a interface do Supabase para manter compatibilidade
 
 interface SupabaseResponse<T> {
-  data: T;
+  data: T | null;
   error: any;
 }
 
@@ -66,26 +66,38 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
             const query = `${baseQuery}&${column}=eq.${value}`;
             return {
               ...queryBuilder,
-              single: () => self.query('GET', `${query}&limit=1`).then(data => ({
-                data: data[0] || null,
-                error: null
-              })),
-              maybeSingle: () => self.query('GET', `${query}&limit=1`).then(data => ({
-                data: data[0] || null,
-                error: null
-              }))
+              single: async () => {
+                const data = await self.query('GET', `${query}&limit=1`);
+                return {
+                  data: data[0] || null,
+                  error: null
+                };
+              },
+              maybeSingle: async () => {
+                const data = await self.query('GET', `${query}&limit=1`);
+                return {
+                  data: data[0] || null,
+                  error: null
+                };
+              }
             };
           },
           order: (column: string, options: any) => queryBuilder,
           limit: (count: number) => queryBuilder,
-          single: () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-            data: data[0] || null,
-            error: null
-          })),
-          maybeSingle: () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-            data: data[0] || null,
-            error: null
-          })),
+          single: async () => {
+            const data = await self.query('GET', `${baseQuery}&limit=1`);
+            return {
+              data: data[0] || null,
+              error: null
+            };
+          },
+          maybeSingle: async () => {
+            const data = await self.query('GET', `${baseQuery}&limit=1`);
+            return {
+              data: data[0] || null,
+              error: null
+            };
+          },
           select: () => queryBuilder
         };
         
@@ -102,26 +114,35 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
       },
       
       insert: (data: any): InsertBuilder => ({
-        select: (columns = '*') => self.query('POST', `/${table}`, data).then(result => ({
-          data: result,
-          error: null
-        }))
+        select: async (columns = '*') => {
+          const result = await self.query('POST', `/${table}`, data);
+          return {
+            data: result,
+            error: null
+          };
+        }
       }),
       
       update: (data: any): UpdateBuilder => ({
         eq: (column: string, value: any) => ({
-          select: (columns = '*') => self.query('PATCH', `/${table}?${column}=eq.${value}`, data).then(result => ({
-            data: result,
-            error: null
-          }))
+          select: async (columns = '*') => {
+            const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
+            return {
+              data: result,
+              error: null
+            };
+          }
         })
       }),
       
       delete: (): DeleteBuilder => ({
-        eq: (column: string, value: any) => self.query('DELETE', `/${table}?${column}=eq.${value}`).then(() => ({
-          data: null,
-          error: null
-        }))
+        eq: async (column: string, value: any) => {
+          await self.query('DELETE', `/${table}?${column}=eq.${value}`);
+          return {
+            data: null,
+            error: null
+          };
+        }
       })
     };
   }

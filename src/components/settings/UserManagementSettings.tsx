@@ -29,17 +29,17 @@ const UserManagementSettings = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      const { data: usersData, error } = await response;
+      const result = await response;
       
-      if (error) {
-        console.error('Erro ao buscar usuários:', error);
-        throw error;
+      if (result.error) {
+        console.error('Erro ao buscar usuários:', result.error);
+        throw result.error;
       }
       
-      console.log(`Encontrado(s) ${usersData?.length || 0} usuário(s)`);
+      console.log(`Encontrado(s) ${result.data?.length || 0} usuário(s)`);
       
       // Map database users to our SystemUser type
-      const mappedUsers = usersData ? usersData.map((user: any) => ({
+      const mappedUsers = result.data ? result.data.map((user: any) => ({
         id: user.id,
         email: user.email,
         isAdmin: user.is_admin,
@@ -76,20 +76,25 @@ const UserManagementSettings = () => {
         console.log('Atualizando usuário existente:', currentUser.email);
         
         // Update existing user
+        const updateData: any = { 
+          email: values.email,
+          is_admin: values.isAdmin
+        };
+        
+        // Only update password if provided
+        if (values.password) {
+          updateData.password_hash = values.password;
+        }
+        
         const updateResponse = await supabase
           .from('system_users')
-          .update({ 
-            email: values.email,
-            is_admin: values.isAdmin,
-            // Only update password if provided
-            ...(values.password ? { password_hash: values.password } : {})
-          })
+          .update(updateData)
           .eq('id', currentUser.id)
           .select();
         
-        const { error } = await updateResponse;
+        const result = await updateResponse;
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
         toast({
           title: 'Sucesso',
@@ -104,9 +109,9 @@ const UserManagementSettings = () => {
           .select('id')
           .eq('email', values.email);
 
-        const { data: existingUser } = await existingResponse;
+        const existingResult = await existingResponse;
 
-        if (existingUser && existingUser.length > 0) {
+        if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
@@ -120,9 +125,9 @@ const UserManagementSettings = () => {
           })
           .select();
         
-        const { error } = await insertResponse;
+        const result = await insertResponse;
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
         toast({
           title: 'Sucesso',
@@ -152,9 +157,9 @@ const UserManagementSettings = () => {
         .delete()
         .eq('id', user.id);
       
-      const { error } = await deleteResponse;
+      const result = await deleteResponse;
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       
       toast({
         title: 'Sucesso',
