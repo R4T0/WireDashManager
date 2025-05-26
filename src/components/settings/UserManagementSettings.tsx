@@ -87,16 +87,14 @@ const UserManagementSettings = () => {
           updateData.password_hash = values.password;
         }
         
-        // Simplified query execution with explicit typing
-        const updateResponse: any = supabase
+        // Use direct client call to avoid type complexity
+        const { data, error } = await (supabase as any)
           .from('system_users')
           .update(updateData)
           .eq('id', currentUser.id)
           .select();
         
-        const updateResult = await updateResponse;
-        
-        if (updateResult.error) throw updateResult.error;
+        if (error) throw error;
         
         toast({
           title: 'Sucesso',
@@ -106,19 +104,19 @@ const UserManagementSettings = () => {
         console.log('Criando novo usuário:', values.email);
         
         // Check if user already exists
-        const existingResponse: any = supabase
+        const { data: existingData, error: existingError } = await (supabase as any)
           .from('system_users')
           .select('id')
           .eq('email', values.email);
 
-        const existingResult = await existingResponse;
+        if (existingError) throw existingError;
 
-        if (existingResult.data && existingResult.data.length > 0) {
+        if (existingData && existingData.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Create new user
-        const insertResponse: any = supabase
+        const { data, error } = await (supabase as any)
           .from('system_users')
           .insert({
             email: values.email,
@@ -127,9 +125,7 @@ const UserManagementSettings = () => {
           })
           .select();
         
-        const insertResult = await insertResponse;
-        
-        if (insertResult.error) throw insertResult.error;
+        if (error) throw error;
         
         toast({
           title: 'Sucesso',
@@ -154,14 +150,12 @@ const UserManagementSettings = () => {
     try {
       console.log('Removendo usuário:', user.email);
       
-      const deleteResponse: any = supabase
+      const { error } = await (supabase as any)
         .from('system_users')
         .delete()
         .eq('id', user.id);
       
-      const deleteResult = await deleteResponse;
-      
-      if (deleteResult.error) throw deleteResult.error;
+      if (error) throw error;
       
       toast({
         title: 'Sucesso',
