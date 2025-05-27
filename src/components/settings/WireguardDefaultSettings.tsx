@@ -64,12 +64,11 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // First try to get existing record
-      const { data: existingData } = await supabase
+      const existingQuery = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
       const defaultsData = {
         endpoint: defaults.endpoint,
@@ -78,29 +77,27 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      let error;
+      let saveError = null;
 
-      if (existingData) {
+      if (existingQuery.data && existingQuery.data.length > 0) {
         // Update existing record
-        const result = await supabase
+        const updateResult = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingData.id)
-          .select();
+          .eq('id', existingQuery.data[0].id);
         
-        error = result.error;
+        saveError = updateResult.error;
       } else {
         // Insert new record
-        const result = await supabase
+        const insertResult = await supabase
           .from('wireguard_defaults')
-          .insert(defaultsData)
-          .select();
+          .insert(defaultsData);
         
-        error = result.error;
+        saveError = insertResult.error;
       }
 
-      if (error) {
-        console.error('Error saving defaults:', error);
+      if (saveError) {
+        console.error('Error saving defaults:', saveError);
         toast.error('Falha ao salvar configurações padrão');
         return;
       }
