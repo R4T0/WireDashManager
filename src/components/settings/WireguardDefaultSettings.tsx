@@ -64,14 +64,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists
-      const { data: existingRecords, error: queryError } = await supabase
+      const existingQuery = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (queryError) {
-        console.error('Error checking existing defaults:', queryError);
+      if (existingQuery.error) {
+        console.error('Error checking existing defaults:', existingQuery.error);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -83,26 +83,26 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingRecords && existingRecords.length > 0) {
+      if (existingQuery.data && existingQuery.data.length > 0) {
         // Update existing record
-        const { error: updateError } = await supabase
+        const updateQuery = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingRecords[0].id);
+          .eq('id', existingQuery.data[0].id);
         
-        if (updateError) {
-          console.error('Error updating defaults:', updateError);
+        if (updateQuery.error) {
+          console.error('Error updating defaults:', updateQuery.error);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const { error: insertError } = await supabase
+        const insertQuery = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertError) {
-          console.error('Error inserting defaults:', insertError);
+        if (insertQuery.error) {
+          console.error('Error inserting defaults:', insertQuery.error);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
