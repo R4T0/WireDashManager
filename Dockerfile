@@ -1,3 +1,4 @@
+
 # Etapa de build com Bun
 FROM oven/bun:1.1 AS builder
 
@@ -11,6 +12,11 @@ RUN bun install
 
 # Copiar o restante do código-fonte
 COPY . .
+
+# Definir variáveis de ambiente para produção
+ENV NODE_ENV=production
+ENV VITE_USE_LOCAL_SUPABASE=false
+ENV VITE_SELF_HOSTED=false
 
 # Build da aplicação
 RUN bun run build
