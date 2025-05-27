@@ -7,6 +7,7 @@ import LogViewer from '@/components/debug/LogViewer';
 import SettingsHeader from '@/components/settings/SettingsHeader';
 import ConnectionDebugger from '@/components/debug/ConnectionDebugger';
 import UserManagementSettings from '@/components/settings/UserManagementSettings';
+import DatabaseConnectionInfo from '@/components/debug/DatabaseConnectionInfo';
 
 const Settings = () => {
   return (
@@ -41,7 +42,10 @@ const Settings = () => {
             </TabsContent>
             
             <TabsContent value="debug" className="mt-0 animate-slideIn">
-              <ConnectionDebugger />
+              <div className="space-y-6">
+                <DatabaseConnectionInfo />
+                <ConnectionDebugger />
+              </div>
             </TabsContent>
           </div>
         </Tabs>
