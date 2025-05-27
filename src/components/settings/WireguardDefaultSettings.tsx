@@ -63,16 +63,41 @@ const WireguardDefaultSettings = () => {
   const handleSaveDefaults = async () => {
     setSavingDefaults(true);
     try {
-      // Save wireguard defaults to Supabase
-      const { error } = await supabase
+      // First try to get existing record
+      const { data: existingData } = await supabase
         .from('wireguard_defaults')
-        .upsert({
-          endpoint: defaults.endpoint,
-          port: defaults.port,
-          allowed_ip_range: defaults.allowedIpRange,
-          dns: defaults.dns
-        })
-        .select();
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const defaultsData = {
+        endpoint: defaults.endpoint,
+        port: defaults.port,
+        allowed_ip_range: defaults.allowedIpRange,
+        dns: defaults.dns
+      };
+
+      let error;
+
+      if (existingData) {
+        // Update existing record
+        const result = await supabase
+          .from('wireguard_defaults')
+          .update(defaultsData)
+          .eq('id', existingData.id)
+          .select();
+        
+        error = result.error;
+      } else {
+        // Insert new record
+        const result = await supabase
+          .from('wireguard_defaults')
+          .insert(defaultsData)
+          .select();
+        
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error saving defaults:', error);
