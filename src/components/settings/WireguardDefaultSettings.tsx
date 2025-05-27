@@ -31,12 +31,14 @@ const WireguardDefaultSettings = () => {
 
   const loadDefaultsFromSupabase = async () => {
     try {
-      const { data, error } = await supabase
+      const response = await supabase
         .from('wireguard_defaults')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
+
+      const { data, error } = response;
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
         console.error('Error loading defaults:', error);
@@ -64,11 +66,13 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists
-      const { data: existingData, error: existingError } = await supabase
+      const existingResponse = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
+
+      const { data: existingData, error: existingError } = existingResponse;
 
       if (existingError) {
         console.error('Error checking existing defaults:', existingError);
@@ -85,10 +89,12 @@ const WireguardDefaultSettings = () => {
 
       if (existingData && existingData.length > 0) {
         // Update existing record
-        const { error: updateError } = await supabase
+        const updateResponse = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', existingData[0].id);
+        
+        const { error: updateError } = updateResponse;
         
         if (updateError) {
           console.error('Error updating defaults:', updateError);
@@ -97,9 +103,11 @@ const WireguardDefaultSettings = () => {
         }
       } else {
         // Insert new record
-        const { error: insertError } = await supabase
+        const insertResponse = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
+        
+        const { error: insertError } = insertResponse;
         
         if (insertError) {
           console.error('Error inserting defaults:', insertError);
