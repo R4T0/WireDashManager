@@ -64,14 +64,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists
-      const { data: checkData, error: checkError } = await supabase
+      const { data: existingRecords, error: fetchError } = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (checkError) {
-        console.error('Error checking existing defaults:', checkError);
+      if (fetchError) {
+        console.error('Error checking existing defaults:', fetchError);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -83,12 +83,12 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (checkData && checkData.length > 0) {
+      if (existingRecords && existingRecords.length > 0) {
         // Update existing record
         const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', checkData[0].id);
+          .eq('id', existingRecords[0].id);
         
         if (updateError) {
           console.error('Error updating defaults:', updateError);
