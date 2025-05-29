@@ -31,24 +31,24 @@ const WireguardDefaultSettings = () => {
 
   const loadDefaultsFromSupabase = async () => {
     try {
-      const { data, error } = await supabase
+      const response = await supabase
         .from('wireguard_defaults')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-        console.error('Error loading defaults:', error);
+      if (response.error && response.error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+        console.error('Error loading defaults:', response.error);
         return;
       }
 
-      if (data) {
+      if (response.data) {
         setDefaults({
-          endpoint: data.endpoint || '',
-          port: data.port || '51820',
-          allowedIpRange: data.allowed_ip_range || '10.0.0.0/24',
-          dns: data.dns || '1.1.1.1'
+          endpoint: response.data.endpoint || '',
+          port: response.data.port || '51820',
+          allowedIpRange: response.data.allowed_ip_range || '10.0.0.0/24',
+          dns: response.data.dns || '1.1.1.1'
         });
       }
     } catch (error) {
@@ -64,14 +64,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists
-      const { data: existingRecords, error: fetchError } = await supabase
+      const existingResponse = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (fetchError) {
-        console.error('Error checking existing defaults:', fetchError);
+      if (existingResponse.error) {
+        console.error('Error checking existing defaults:', existingResponse.error);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -83,26 +83,26 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingRecords && existingRecords.length > 0) {
+      if (existingResponse.data && existingResponse.data.length > 0) {
         // Update existing record
-        const { error: updateError } = await supabase
+        const updateResponse = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingRecords[0].id);
+          .eq('id', existingResponse.data[0].id);
         
-        if (updateError) {
-          console.error('Error updating defaults:', updateError);
+        if (updateResponse.error) {
+          console.error('Error updating defaults:', updateResponse.error);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const { error: insertError } = await supabase
+        const insertResponse = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertError) {
-          console.error('Error inserting defaults:', insertError);
+        if (insertResponse.error) {
+          console.error('Error inserting defaults:', insertResponse.error);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
