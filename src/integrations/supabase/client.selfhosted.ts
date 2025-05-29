@@ -7,23 +7,29 @@ interface SupabaseResponse<T> {
   error: any;
 }
 
-interface QueryBuilder {
-  eq: (column: string, value: any) => QueryBuilder;
-  order: (column: string, options: any) => QueryBuilder;
-  limit: (count: number) => QueryBuilder;
-  single: () => Promise<SupabaseResponse<any>>;
-  maybeSingle: () => Promise<SupabaseResponse<any>>;
-  select: (columns?: string) => QueryBuilder;
+interface QueryBuilder<T = any> {
+  eq: (column: string, value: any) => QueryBuilder<T>;
+  order: (column: string, options: any) => QueryBuilder<T>;
+  limit: (count: number) => QueryBuilder<T>;
+  single: () => Promise<SupabaseResponse<T>>;
+  maybeSingle: () => Promise<SupabaseResponse<T>>;
+  select: (columns?: string) => QueryBuilder<T>;
 }
 
-interface InsertBuilder {
-  select: (columns?: string) => Promise<SupabaseResponse<any>>;
+interface SelectQueryBuilder<T = any> extends Promise<SupabaseResponse<T[]>> {
+  eq: (column: string, value: any) => QueryBuilder<T>;
+  order: (column: string, options: any) => QueryBuilder<T>;
+  limit: (count: number) => QueryBuilder<T>;
+  single: () => Promise<SupabaseResponse<T>>;
+  maybeSingle: () => Promise<SupabaseResponse<T>>;
 }
 
-interface UpdateBuilder {
-  eq: (column: string, value: any) => {
-    select: (columns?: string) => Promise<SupabaseResponse<any>>;
-  };
+interface InsertBuilder<T = any> {
+  select: (columns?: string) => Promise<SupabaseResponse<T[]>>;
+}
+
+interface UpdateBuilder<T = any> {
+  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
 }
 
 interface DeleteBuilder {
@@ -31,7 +37,7 @@ interface DeleteBuilder {
 }
 
 interface TableBuilder {
-  select: (columns?: string) => any;
+  select: (columns?: string) => SelectQueryBuilder;
   insert: (data: any) => InsertBuilder;
   update: (data: any) => UpdateBuilder;
   delete: () => DeleteBuilder;
@@ -61,78 +67,75 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
       select: (columns = '*') => {
         const baseQuery = `/${table}?select=${columns}`;
         
-        const queryBuilder = {
-          eq: (column: string, value: any) => {
-            const query = `${baseQuery}&${column}=eq.${value}`;
-            return {
-              ...queryBuilder,
-              single: async () => {
-                const data = await self.query('GET', `${query}&limit=1`);
-                return {
-                  data: data[0] || null,
-                  error: null
-                };
-              },
-              maybeSingle: async () => {
-                const data = await self.query('GET', `${query}&limit=1`);
-                return {
-                  data: data[0] || null,
-                  error: null
-                };
-              }
-            };
-          },
-          order: (column: string, options: any) => queryBuilder,
-          limit: (count: number) => queryBuilder,
-          single: async () => {
-            const data = await self.query('GET', `${baseQuery}&limit=1`);
-            return {
-              data: data[0] || null,
-              error: null
-            };
-          },
-          maybeSingle: async () => {
-            const data = await self.query('GET', `${baseQuery}&limit=1`);
-            return {
-              data: data[0] || null,
-              error: null
-            };
-          },
-          select: () => queryBuilder
-        };
-        
-        // Create a promise that resolves to the data
-        const promise = self.query('GET', baseQuery).then(data => ({
+        // Create the main promise
+        const mainPromise = self.query('GET', baseQuery).then(data => ({
           data,
           error: null
-        }));
+        })) as SelectQueryBuilder;
+
+        // Add query builder methods
+        mainPromise.eq = (column: string, value: any) => {
+          const query = `${baseQuery}&${column}=eq.${value}`;
+          return {
+            eq: (col: string, val: any) => mainPromise.eq(col, val),
+            order: (col: string, opts: any) => mainPromise.order(col, opts),
+            limit: (count: number) => mainPromise.limit(count),
+            select: (cols?: string) => mainPromise.select(cols),
+            single: async () => {
+              const data = await self.query('GET', `${query}&limit=1`);
+              return {
+                data: data[0] || null,
+                error: null
+              };
+            },
+            maybeSingle: async () => {
+              const data = await self.query('GET', `${query}&limit=1`);
+              return {
+                data: data[0] || null,
+                error: null
+              };
+            }
+          };
+        };
+
+        mainPromise.order = (column: string, options: any) => mainPromise;
+        mainPromise.limit = (count: number) => mainPromise;
+        mainPromise.single = async () => {
+          const data = await self.query('GET', `${baseQuery}&limit=1`);
+          return {
+            data: data[0] || null,
+            error: null
+          };
+        };
+        mainPromise.maybeSingle = async () => {
+          const data = await self.query('GET', `${baseQuery}&limit=1`);
+          return {
+            data: data[0] || null,
+            error: null
+          };
+        };
         
-        // Attach query builder methods to the promise
-        Object.assign(promise, queryBuilder);
-        
-        return promise;
+        return mainPromise;
       },
       
       insert: (data: any): InsertBuilder => ({
         select: async (columns = '*') => {
           const result = await self.query('POST', `/${table}`, data);
           return {
-            data: result,
+            data: Array.isArray(result) ? result : [result],
             error: null
           };
         }
       }),
       
       update: (data: any): UpdateBuilder => ({
-        eq: (column: string, value: any) => ({
-          select: async (columns = '*') => {
-            const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
-            return {
-              data: result,
-              error: null
-            };
-          }
-        })
+        eq: async (column: string, value: any) => {
+          const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
+          return {
+            data: Array.isArray(result) ? result : [result],
+            error: null
+          };
+        }
       }),
       
       delete: (): DeleteBuilder => ({
