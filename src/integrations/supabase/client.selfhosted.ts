@@ -17,9 +17,9 @@ interface QueryBuilder<T = any> {
 }
 
 interface SelectQueryBuilder<T = any> extends Promise<SupabaseResponse<T[]>> {
-  eq: (column: string, value: any) => QueryBuilder<T>;
-  order: (column: string, options: any) => QueryBuilder<T>;
-  limit: (count: number) => QueryBuilder<T>;
+  eq: (column: string, value: any) => SelectQueryBuilder<T>;
+  order: (column: string, options: any) => SelectQueryBuilder<T>;
+  limit: (count: number) => SelectQueryBuilder<T>;
   single: () => Promise<SupabaseResponse<T>>;
   maybeSingle: () => Promise<SupabaseResponse<T>>;
 }
@@ -67,84 +67,98 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
       select: (columns = '*') => {
         const baseQuery = `/${table}?select=${columns}`;
         
-        // Create the main promise
-        const mainPromise = self.query('GET', baseQuery).then(data => ({
+        // Create the main promise that resolves to the expected format
+        const promise = self.query('GET', baseQuery).then(data => ({
           data,
           error: null
         })) as SelectQueryBuilder;
 
-        // Add query builder methods
-        mainPromise.eq = (column: string, value: any) => {
+        // Add chainable methods
+        promise.eq = (column: string, value: any) => {
           const query = `${baseQuery}&${column}=eq.${value}`;
-          return {
-            eq: (col: string, val: any) => mainPromise.eq(col, val),
-            order: (col: string, opts: any) => mainPromise.order(col, opts),
-            limit: (count: number) => mainPromise.limit(count),
-            select: (cols?: string) => mainPromise.select(cols),
-            single: async () => {
-              const data = await self.query('GET', `${query}&limit=1`);
-              return {
-                data: data[0] || null,
-                error: null
-              };
-            },
-            maybeSingle: async () => {
-              const data = await self.query('GET', `${query}&limit=1`);
-              return {
-                data: data[0] || null,
-                error: null
-              };
-            }
-          };
+          const chainedPromise = self.query('GET', query).then(data => ({
+            data,
+            error: null
+          })) as SelectQueryBuilder;
+          
+          // Copy all methods to the new promise
+          chainedPromise.eq = promise.eq;
+          chainedPromise.order = promise.order;
+          chainedPromise.limit = promise.limit;
+          chainedPromise.single = () => self.query('GET', `${query}&limit=1`).then(data => ({
+            data: data[0] || null,
+            error: null
+          }));
+          chainedPromise.maybeSingle = () => self.query('GET', `${query}&limit=1`).then(data => ({
+            data: data[0] || null,
+            error: null
+          }));
+          
+          return chainedPromise;
         };
 
-        mainPromise.order = (column: string, options: any) => mainPromise;
-        mainPromise.limit = (count: number) => mainPromise;
-        mainPromise.single = async () => {
-          const data = await self.query('GET', `${baseQuery}&limit=1`);
-          return {
-            data: data[0] || null,
-            error: null
-          };
-        };
-        mainPromise.maybeSingle = async () => {
-          const data = await self.query('GET', `${baseQuery}&limit=1`);
-          return {
-            data: data[0] || null,
-            error: null
-          };
-        };
+        promise.order = (column: string, options: any) => promise;
+        promise.limit = (count: number) => promise;
+        promise.single = () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
+          data: data[0] || null,
+          error: null
+        }));
+        promise.maybeSingle = () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
+          data: data[0] || null,
+          error: null
+        }));
         
-        return mainPromise;
+        return promise;
       },
       
       insert: (data: any): InsertBuilder => ({
         select: async (columns = '*') => {
-          const result = await self.query('POST', `/${table}`, data);
-          return {
-            data: Array.isArray(result) ? result : [result],
-            error: null
-          };
+          try {
+            const result = await self.query('POST', `/${table}`, data);
+            return {
+              data: Array.isArray(result) ? result : [result],
+              error: null
+            };
+          } catch (error) {
+            return {
+              data: null,
+              error
+            };
+          }
         }
       }),
       
       update: (data: any): UpdateBuilder => ({
         eq: async (column: string, value: any) => {
-          const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
-          return {
-            data: Array.isArray(result) ? result : [result],
-            error: null
-          };
+          try {
+            const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
+            return {
+              data: Array.isArray(result) ? result : [result],
+              error: null
+            };
+          } catch (error) {
+            return {
+              data: null,
+              error
+            };
+          }
         }
       }),
       
       delete: (): DeleteBuilder => ({
         eq: async (column: string, value: any) => {
-          await self.query('DELETE', `/${table}?${column}=eq.${value}`);
-          return {
-            data: null,
-            error: null
-          };
+          try {
+            await self.query('DELETE', `/${table}?${column}=eq.${value}`);
+            return {
+              data: null,
+              error: null
+            };
+          } catch (error) {
+            return {
+              data: null,
+              error
+            };
+          }
         }
       })
     };

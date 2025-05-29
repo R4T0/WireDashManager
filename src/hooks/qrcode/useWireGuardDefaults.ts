@@ -7,7 +7,7 @@ export interface QRCodeDefaults {
   endpoint: string;
   port: string;
   dns: string;
-  allowedIpRange: string; // Added this missing property
+  allowedIpRange: string;
 }
 
 export const useWireGuardDefaults = () => {
@@ -15,7 +15,7 @@ export const useWireGuardDefaults = () => {
     endpoint: 'vpn.example.com',
     port: '51820',
     dns: '1.1.1.1',
-    allowedIpRange: '10.0.0.0/24' // Add default value
+    allowedIpRange: '10.0.0.0/24'
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,25 +28,25 @@ export const useWireGuardDefaults = () => {
       logger.info("Loading WireGuard defaults from Supabase");
       setLoading(true);
       
-      const { data, error } = await supabase
+      const result = await supabase
         .from('wireguard_defaults')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-        logger.error('Error loading defaults:', error);
+      if (result.error && result.error.code !== 'PGRST116') {
+        logger.error('Error loading defaults:', result.error);
         return;
       }
 
-      if (data) {
-        logger.info("Loaded defaults from Supabase", data);
+      if (result.data) {
+        logger.info("Loaded defaults from Supabase", result.data);
         setDefaults({
-          endpoint: data.endpoint || 'vpn.example.com',
-          port: data.port || '51820',
-          dns: data.dns || '1.1.1.1',
-          allowedIpRange: data.allowed_ip_range || '10.0.0.0/24' // Map to the database field
+          endpoint: result.data.endpoint || 'vpn.example.com',
+          port: result.data.port || '51820',
+          dns: result.data.dns || '1.1.1.1',
+          allowedIpRange: result.data.allowed_ip_range || '10.0.0.0/24'
         });
       } else {
         logger.warn("No defaults found in Supabase");

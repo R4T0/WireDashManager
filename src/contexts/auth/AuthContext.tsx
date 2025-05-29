@@ -56,18 +56,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       // Query the system_users table for the user with matching email
-      const response = await supabase
+      const result = await supabase
         .from('system_users')
         .select('*')
         .eq('email', credentials.email);
-      
-      const { data, error } = await response;
 
-      if (error || !data || data.length === 0) {
+      if (result.error || !result.data || result.data.length === 0) {
         throw new Error('User not found');
       }
 
-      const userData = data[0];
+      const userData = result.data[0];
 
       // Compare the password hash (in a real system, we'd use bcrypt or similar)
       // For now, we'll use a simple check since we can't do real password hashing on the client
@@ -120,19 +118,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       // First check if user already exists
-      const existingUserResponse = await supabase
+      const existingUserResult = await supabase
         .from('system_users')
         .select('id')
         .eq('email', credentials.email);
-      
-      const { data: existingData } = await existingUserResponse;
 
-      if (existingData && existingData.length > 0) {
+      if (existingUserResult.data && existingUserResult.data.length > 0) {
         throw new Error('Este email já está em uso');
       }
 
       // Create new user
-      const insertResponse = await supabase
+      const insertResult = await supabase
         .from('system_users')
         .insert({
           email: credentials.email,
@@ -141,13 +137,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
         .select();
 
-      const { data, error } = await insertResponse;
-
-      if (error) {
-        throw new Error('Erro ao criar conta: ' + error.message);
+      if (insertResult.error) {
+        throw new Error('Erro ao criar conta: ' + insertResult.error.message);
       }
 
-      const userData = data[0];
+      const userData = insertResult.data[0];
 
       // Map database user to our SystemUser type
       const user: SystemUser = {

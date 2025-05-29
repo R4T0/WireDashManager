@@ -51,7 +51,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
       // Se for o primeiro usuário, podemos registrar diretamente
       if (isFirstUser) {
         // Registrar novo usuário diretamente na tabela system_users
-        const insertResponse = await supabase
+        const insertResult = await supabase
           .from('system_users')
           .insert({
             email: email,
@@ -60,25 +60,21 @@ const SignupForm: React.FC<SignupFormProps> = ({
           })
           .select();
         
-        const result = await insertResponse;
-        
-        if (result.error) throw result.error;
-        userId = result.data[0]?.id;
+        if (insertResult.error) throw insertResult.error;
+        userId = insertResult.data[0]?.id;
       } else {
         // Caso não seja o primeiro usuário, primeiro verificamos se já existe
-        const existingResponse = await supabase
+        const existingResult = await supabase
           .from('system_users')
           .select('id')
           .eq('email', email);
-        
-        const existingResult = await existingResponse;
         
         if (existingResult.data && existingResult.data.length > 0) {
           throw new Error('Este email já está em uso');
         }
         
         // Registrar novo usuário
-        const insertResponse = await supabase
+        const insertResult = await supabase
           .from('system_users')
           .insert({
             email: email,
@@ -87,10 +83,8 @@ const SignupForm: React.FC<SignupFormProps> = ({
           })
           .select();
         
-        const result = await insertResponse;
-        
-        if (result.error) throw result.error;
-        userId = result.data[0]?.id;
+        if (insertResult.error) throw insertResult.error;
+        userId = insertResult.data[0]?.id;
       }
       
       if (userId) {
