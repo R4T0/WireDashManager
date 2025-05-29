@@ -63,15 +63,15 @@ const WireguardDefaultSettings = () => {
   const handleSaveDefaults = async () => {
     setSavingDefaults(true);
     try {
-      // Check if any record exists
-      const { data: existingRecords, error: fetchError } = await supabase
+      // Check if any record exists first
+      const existingResponse = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (fetchError) {
-        console.error('Error checking existing defaults:', fetchError);
+      if (existingResponse.error) {
+        console.error('Error checking existing defaults:', existingResponse.error);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -83,26 +83,26 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingRecords && existingRecords.length > 0) {
+      if (existingResponse.data && existingResponse.data.length > 0) {
         // Update existing record
-        const { error: updateError } = await supabase
+        const updateResponse = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingRecords[0].id);
+          .eq('id', existingResponse.data[0].id);
         
-        if (updateError) {
-          console.error('Error updating defaults:', updateError);
+        if (updateResponse.error) {
+          console.error('Error updating defaults:', updateResponse.error);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const { error: insertError } = await supabase
+        const insertResponse = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertError) {
-          console.error('Error inserting defaults:', insertError);
+        if (insertResponse.error) {
+          console.error('Error inserting defaults:', insertResponse.error);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
