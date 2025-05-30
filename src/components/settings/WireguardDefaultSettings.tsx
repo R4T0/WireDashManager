@@ -68,9 +68,10 @@ const WireguardDefaultSettings = () => {
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error checking existing defaults:', fetchError);
         toast.error('Falha ao verificar configurações existentes');
         return;
@@ -83,12 +84,12 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingData && existingData.length > 0) {
+      if (existingData?.id) {
         // Update existing record
         const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingData[0].id);
+          .eq('id', existingData.id);
         
         if (updateError) {
           console.error('Error updating defaults:', updateError);
