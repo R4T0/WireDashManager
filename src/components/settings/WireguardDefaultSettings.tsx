@@ -74,7 +74,6 @@ const WireguardDefaultSettings = () => {
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error checking existing defaults:', fetchError);
         toast.error('Falha ao verificar configurações existentes');
-        setSavingDefaults(false);
         return;
       }
 
@@ -87,27 +86,25 @@ const WireguardDefaultSettings = () => {
 
       if (existingData?.id) {
         // Update existing record
-        const updateResult = await supabase
+        const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', existingData.id);
         
-        if (updateResult.error) {
-          console.error('Error updating defaults:', updateResult.error);
+        if (updateError) {
+          console.error('Error updating defaults:', updateError);
           toast.error('Falha ao atualizar configurações padrão');
-          setSavingDefaults(false);
           return;
         }
       } else {
         // Insert new record
-        const insertResult = await supabase
+        const { error: insertError } = await supabase
           .from('wireguard_defaults')
           .insert([defaultsData]);
         
-        if (insertResult.error) {
-          console.error('Error inserting defaults:', insertResult.error);
+        if (insertError) {
+          console.error('Error inserting defaults:', insertError);
           toast.error('Falha ao salvar configurações padrão');
-          setSavingDefaults(false);
           return;
         }
       }
