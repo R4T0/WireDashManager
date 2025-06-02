@@ -64,15 +64,15 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const existingQuery = await supabase
+      const { data: existingData, error: fetchError } = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (existingQuery.error && existingQuery.error.code !== 'PGRST116') {
-        console.error('Error checking existing defaults:', existingQuery.error);
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking existing defaults:', fetchError);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -84,26 +84,26 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingQuery.data?.id) {
+      if (existingData?.id) {
         // Update existing record
-        const updateQuery = await supabase
+        const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingQuery.data.id);
+          .eq('id', existingData.id);
         
-        if (updateQuery.error) {
-          console.error('Error updating defaults:', updateQuery.error);
+        if (updateError) {
+          console.error('Error updating defaults:', updateError);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const insertQuery = await supabase
+        const { error: insertError } = await supabase
           .from('wireguard_defaults')
           .insert([defaultsData]);
         
-        if (insertQuery.error) {
-          console.error('Error inserting defaults:', insertQuery.error);
+        if (insertError) {
+          console.error('Error inserting defaults:', insertError);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
