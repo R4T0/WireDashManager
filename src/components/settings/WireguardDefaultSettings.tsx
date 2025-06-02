@@ -87,33 +87,29 @@ const WireguardDefaultSettings = () => {
 
       if (existingData?.id) {
         // Update existing record
-        try {
-          const { error } = await supabase
-            .from('wireguard_defaults')
-            .update(defaultsData)
-            .eq('id', existingData.id);
-          
-          if (error) {
-            throw error;
-          }
-        } catch (error) {
-          console.error('Error updating defaults:', error);
+        const updateQuery = supabase
+          .from('wireguard_defaults')
+          .update(defaultsData)
+          .eq('id', existingData.id);
+        
+        const { error: updateError } = await updateQuery;
+        
+        if (updateError) {
+          console.error('Error updating defaults:', updateError);
           toast.error('Falha ao atualizar configurações padrão');
           setSavingDefaults(false);
           return;
         }
       } else {
         // Insert new record
-        try {
-          const { error } = await supabase
-            .from('wireguard_defaults')
-            .insert([defaultsData]);
-          
-          if (error) {
-            throw error;
-          }
-        } catch (error) {
-          console.error('Error inserting defaults:', error);
+        const insertQuery = supabase
+          .from('wireguard_defaults')
+          .insert([defaultsData]);
+        
+        const { error: insertError } = await insertQuery;
+        
+        if (insertError) {
+          console.error('Error inserting defaults:', insertError);
           toast.error('Falha ao salvar configurações padrão');
           setSavingDefaults(false);
           return;
