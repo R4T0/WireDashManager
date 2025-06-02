@@ -15,6 +15,17 @@ interface WireguardDefaults {
   dns: string;
 }
 
+// Explicit type for database record
+interface WireguardDefaultsRecord {
+  id: string;
+  endpoint?: string;
+  port?: string;
+  allowed_ip_range?: string;
+  dns?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const WireguardDefaultSettings = () => {
   const [savingDefaults, setSavingDefaults] = useState(false);
   const [defaults, setDefaults] = useState<WireguardDefaults>({
@@ -43,7 +54,7 @@ const WireguardDefaultSettings = () => {
       }
 
       if (data && data.length > 0) {
-        const record = data[0];
+        const record = data[0] as WireguardDefaultsRecord;
         setDefaults({
           endpoint: record.endpoint || '',
           port: record.port || '51820',
@@ -63,7 +74,7 @@ const WireguardDefaultSettings = () => {
   const handleSaveDefaults = async () => {
     setSavingDefaults(true);
     try {
-      // Check if any record exists first
+      // Check if any record exists first - use explicit typing
       const existingResult = await supabase
         .from('wireguard_defaults')
         .select('id')
@@ -83,12 +94,16 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingResult.data && existingResult.data.length > 0) {
+      // Use explicit type casting to avoid deep type instantiation
+      const existingData = existingResult.data as Array<{ id: string }> | null;
+
+      if (existingData && existingData.length > 0) {
         // Update existing record
+        const recordId = existingData[0].id;
         const updateResult = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingResult.data[0].id);
+          .eq('id', recordId);
         
         if (updateResult.error) {
           console.error('Error updating defaults:', updateResult.error);
@@ -96,7 +111,7 @@ const WireguardDefaultSettings = () => {
           return;
         }
       } else {
-        // Insert new record - need to execute the query
+        // Insert new record
         const insertResult = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData)
