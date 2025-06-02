@@ -75,14 +75,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const existingCheck = await supabase
+      const { data: existingRecords, error: checkError } = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (existingCheck.error && existingCheck.error.code !== 'PGRST116') {
-        console.error('Error checking existing defaults:', existingCheck.error);
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing defaults:', checkError);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -94,9 +94,12 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingCheck.data && existingCheck.data.length > 0) {
-        // Update existing record
-        const recordId = existingCheck.data[0].id;
+      // Simplified approach to avoid deep type instantiation
+      const hasExistingRecord = existingRecords && existingRecords.length > 0;
+      
+      if (hasExistingRecord) {
+        // Update existing record - use simple variable assignment
+        const recordId = (existingRecords as Array<{id: string}>)[0].id;
         const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
