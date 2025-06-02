@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -98,10 +99,10 @@ const WireguardDefaultSettings = () => {
           return;
         }
       } else {
-        // Insert new record
+        // Insert new record - properly execute the query
         const { error: insertError } = await supabase
           .from('wireguard_defaults')
-          .insert([defaultsData]);
+          .insert(defaultsData);
         
         if (insertError) {
           console.error('Error inserting defaults:', insertError);
