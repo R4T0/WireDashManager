@@ -85,12 +85,14 @@ const WireguardDefaultSettings = () => {
         dns: defaults.dns
       };
 
-      if (existingResult.data && existingResult.data.length > 0) {
+      const existingData = existingResult.data;
+
+      if (existingData && existingData.length > 0) {
         // Update existing record
         const updateResult = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
-          .eq('id', existingResult.data[0].id);
+          .eq('id', existingData[0].id);
         
         if (updateResult.error) {
           console.error('Error updating defaults:', updateResult.error);
@@ -101,7 +103,8 @@ const WireguardDefaultSettings = () => {
         // Insert new record
         const insertResult = await supabase
           .from('wireguard_defaults')
-          .insert([defaultsData]);
+          .insert([defaultsData])
+          .select();
         
         if (insertResult.error) {
           console.error('Error inserting defaults:', insertResult.error);
