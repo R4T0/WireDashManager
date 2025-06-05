@@ -46,15 +46,16 @@ const WireguardDefaultSettings = () => {
         .from('wireguard_defaults')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading defaults:', error);
         return;
       }
 
-      if (data && data.length > 0) {
-        const record = data[0] as WireguardDefaultsRecord;
+      if (data) {
+        const record = data as WireguardDefaultsRecord;
         setDefaults({
           endpoint: record.endpoint || '',
           port: record.port || '51820',
@@ -79,7 +80,8 @@ const WireguardDefaultSettings = () => {
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
       if (existingError && existingError.code !== 'PGRST116') {
         console.error('Error checking existing defaults:', existingError);
@@ -95,11 +97,11 @@ const WireguardDefaultSettings = () => {
       };
 
       // Check if we have existing records
-      const hasExistingRecord = existingData && existingData.length > 0;
+      const hasExistingRecord = existingData;
       
       if (hasExistingRecord) {
         // Update existing record
-        const recordId = existingData[0].id;
+        const recordId = existingData.id;
         const { data: updateData, error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)

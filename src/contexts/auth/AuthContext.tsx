@@ -59,13 +59,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await supabase
         .from('system_users')
         .select('*')
-        .eq('email', credentials.email);
+        .eq('email', credentials.email)
+        .single();
 
-      if (result.error || !result.data || result.data.length === 0) {
+      if (result.error || !result.data) {
         throw new Error('User not found');
       }
 
-      const userData = result.data[0];
+      const userData = result.data;
 
       // Compare the password hash (in a real system, we'd use bcrypt or similar)
       // For now, we'll use a simple check since we can't do real password hashing on the client
@@ -121,9 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const existingUserResult = await supabase
         .from('system_users')
         .select('id')
-        .eq('email', credentials.email);
+        .eq('email', credentials.email)
+        .single();
 
-      if (existingUserResult.data && existingUserResult.data.length > 0) {
+      if (existingUserResult.data) {
         throw new Error('Este email já está em uso');
       }
 

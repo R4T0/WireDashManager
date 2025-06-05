@@ -13,7 +13,6 @@ interface SelectQueryBuilder<T = any> {
   limit: (count: number) => SelectQueryBuilder<T>;
   single: () => Promise<SupabaseResponse<T>>;
   maybeSingle: () => Promise<SupabaseResponse<T>>;
-  then: (onfulfilled?: any, onrejected?: any) => Promise<SupabaseResponse<T[]>>;
 }
 
 interface InsertBuilder<T = any> {
@@ -58,7 +57,6 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
     return {
       select: (columns = '*') => {
         const baseQuery = `/${table}?select=${columns}`;
-        let currentQuery = baseQuery;
         let filters: string[] = [];
         
         const queryBuilder: SelectQueryBuilder = {
@@ -104,13 +102,6 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
                 error
               };
             }
-          },
-          then: (onfulfilled?: any, onrejected?: any) => {
-            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
-            return self.query('GET', query).then(data => ({
-              data,
-              error: null
-            })).then(onfulfilled, onrejected);
           }
         };
         
