@@ -75,14 +75,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const checkResponse = await supabase
+      const { data: existingRecords, error: checkError } = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (checkResponse.error && checkResponse.error.code !== 'PGRST116') {
-        console.error('Error checking existing defaults:', checkResponse.error);
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing defaults:', checkError);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -95,30 +95,29 @@ const WireguardDefaultSettings = () => {
       };
 
       // Check if we have existing records
-      const existingRecords = checkResponse.data || [];
-      const hasExistingRecord = existingRecords.length > 0;
+      const hasExistingRecord = existingRecords && existingRecords.length > 0;
       
       if (hasExistingRecord) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        const updateResponse = await supabase
+        const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', recordId);
         
-        if (updateResponse.error) {
-          console.error('Error updating defaults:', updateResponse.error);
+        if (updateError) {
+          console.error('Error updating defaults:', updateError);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const insertResponse = await supabase
+        const { error: insertError } = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertResponse.error) {
-          console.error('Error inserting defaults:', insertResponse.error);
+        if (insertError) {
+          console.error('Error inserting defaults:', insertError);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
