@@ -1,4 +1,5 @@
 
+
 // Cliente simplificado para modo self-hosted
 // Este arquivo simula a interface do Supabase para manter compatibilidade
 
@@ -7,35 +8,174 @@ interface SupabaseResponse<T> {
   error: any;
 }
 
-interface SelectQueryBuilder {
-  eq: (column: string, value: any) => SelectQueryBuilder;
-  order: (column: string, options: any) => SelectQueryBuilder;
-  limit: (count: number) => SelectQueryBuilder;
-  single: () => Promise<SupabaseResponse<any>>;
-  maybeSingle: () => Promise<SupabaseResponse<any>>;
+// Simplified query builder without circular references
+class SimpleSelectQueryBuilder {
+  private baseQuery: string;
+  private filters: string[] = [];
+  private apiClient: SelfHostedSupabaseClient;
+
+  constructor(baseQuery: string, apiClient: SelfHostedSupabaseClient) {
+    this.baseQuery = baseQuery;
+    this.apiClient = apiClient;
+  }
+
+  eq(column: string, value: any) {
+    this.filters.push(`${column}=eq.${value}`);
+    return this;
+  }
+
+  order(column: string, options: any) {
+    const direction = options?.ascending === false ? 'desc' : 'asc';
+    this.filters.push(`order=${column}.${direction}`);
+    return this;
+  }
+
+  limit(count: number) {
+    this.filters.push(`limit=${count}`);
+    return this;
+  }
+
+  async single() {
+    const query = this.filters.length > 0 ? `${this.baseQuery}&${this.filters.join('&')}` : this.baseQuery;
+    try {
+      const data = await this.apiClient.query('GET', `${query}&limit=1`);
+      return {
+        data: data[0] || null,
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error
+      };
+    }
+  }
+
+  async maybeSingle() {
+    const query = this.filters.length > 0 ? `${this.baseQuery}&${this.filters.join('&')}` : this.baseQuery;
+    try {
+      const data = await this.apiClient.query('GET', `${query}&limit=1`);
+      return {
+        data: data[0] || null,
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error
+      };
+    }
+  }
 }
 
-interface InsertBuilder {
-  select: (columns?: string) => Promise<SupabaseResponse<any[]>>;
+class SimpleInsertBuilder {
+  private apiClient: SelfHostedSupabaseClient;
+  private table: string;
+  private data: any;
+
+  constructor(table: string, data: any, apiClient: SelfHostedSupabaseClient) {
+    this.table = table;
+    this.data = data;
+    this.apiClient = apiClient;
+  }
+
+  async select(columns = '*') {
+    try {
+      const result = await this.apiClient.query('POST', `/${this.table}`, this.data);
+      return {
+        data: Array.isArray(result) ? result : [result],
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error
+      };
+    }
+  }
 }
 
-interface UpdateBuilder {
-  eq: (column: string, value: any) => Promise<SupabaseResponse<any[]>>;
+class SimpleUpdateBuilder {
+  private apiClient: SelfHostedSupabaseClient;
+  private table: string;
+  private data: any;
+
+  constructor(table: string, data: any, apiClient: SelfHostedSupabaseClient) {
+    this.table = table;
+    this.data = data;
+    this.apiClient = apiClient;
+  }
+
+  async eq(column: string, value: any) {
+    try {
+      const result = await this.apiClient.query('PATCH', `/${this.table}?${column}=eq.${value}`, this.data);
+      return {
+        data: Array.isArray(result) ? result : [result],
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error
+      };
+    }
+  }
 }
 
-interface DeleteBuilder {
-  eq: (column: string, value: any) => Promise<SupabaseResponse<any>>;
+class SimpleDeleteBuilder {
+  private apiClient: SelfHostedSupabaseClient;
+  private table: string;
+
+  constructor(table: string, apiClient: SelfHostedSupabaseClient) {
+    this.table = table;
+    this.apiClient = apiClient;
+  }
+
+  async eq(column: string, value: any) {
+    try {
+      await this.apiClient.query('DELETE', `/${this.table}?${column}=eq.${value}`);
+      return {
+        data: null,
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error
+      };
+    }
+  }
 }
 
-interface TableBuilder {
-  select: (columns?: string) => SelectQueryBuilder;
-  insert: (data: any) => InsertBuilder;
-  update: (data: any) => UpdateBuilder;
-  delete: () => DeleteBuilder;
+class SimpleTableBuilder {
+  private table: string;
+  private apiClient: SelfHostedSupabaseClient;
+
+  constructor(table: string, apiClient: SelfHostedSupabaseClient) {
+    this.table = table;
+    this.apiClient = apiClient;
+  }
+
+  select(columns = '*') {
+    const baseQuery = `/${this.table}?select=${columns}`;
+    return new SimpleSelectQueryBuilder(baseQuery, this.apiClient);
+  }
+
+  insert(data: any) {
+    return new SimpleInsertBuilder(this.table, data, this.apiClient);
+  }
+
+  update(data: any) {
+    return new SimpleUpdateBuilder(this.table, data, this.apiClient);
+  }
+
+  delete() {
+    return new SimpleDeleteBuilder(this.table, this.apiClient);
+  }
 }
 
 interface SelfHostedClient {
-  from: (table: string) => TableBuilder;
+  from: (table: string) => SimpleTableBuilder;
   auth: {
     signUp: (credentials: any) => Promise<SupabaseResponse<any>>;
     signInWithPassword: (credentials: any) => Promise<SupabaseResponse<any>>;
@@ -51,116 +191,8 @@ interface SelfHostedClient {
 class SelfHostedSupabaseClient implements SelfHostedClient {
   private apiUrl = '/api';
 
-  from(table: string): TableBuilder {
-    const self = this;
-    
-    return {
-      select: (columns = '*') => {
-        const baseQuery = `/${table}?select=${columns}`;
-        let filters: string[] = [];
-        
-        const queryBuilder: SelectQueryBuilder = {
-          eq: (column: string, value: any) => {
-            filters.push(`${column}=eq.${value}`);
-            return queryBuilder;
-          },
-          order: (column: string, options: any) => {
-            const direction = options?.ascending === false ? 'desc' : 'asc';
-            filters.push(`order=${column}.${direction}`);
-            return queryBuilder;
-          },
-          limit: (count: number) => {
-            filters.push(`limit=${count}`);
-            return queryBuilder;
-          },
-          single: async () => {
-            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
-            try {
-              const data = await self.query('GET', `${query}&limit=1`);
-              return {
-                data: data[0] || null,
-                error: null
-              };
-            } catch (error) {
-              return {
-                data: null,
-                error
-              };
-            }
-          },
-          maybeSingle: async () => {
-            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
-            try {
-              const data = await self.query('GET', `${query}&limit=1`);
-              return {
-                data: data[0] || null,
-                error: null
-              };
-            } catch (error) {
-              return {
-                data: null,
-                error
-              };
-            }
-          }
-        };
-        
-        return queryBuilder;
-      },
-      
-      insert: (data: any): InsertBuilder => {
-        return {
-          select: async (columns = '*') => {
-            try {
-              const result = await self.query('POST', `/${table}`, data);
-              return {
-                data: Array.isArray(result) ? result : [result],
-                error: null
-              };
-            } catch (error) {
-              return {
-                data: null,
-                error
-              };
-            }
-          }
-        };
-      },
-      
-      update: (data: any): UpdateBuilder => ({
-        eq: async (column: string, value: any) => {
-          try {
-            const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
-            return {
-              data: Array.isArray(result) ? result : [result],
-              error: null
-            };
-          } catch (error) {
-            return {
-              data: null,
-              error
-            };
-          }
-        }
-      }),
-      
-      delete: (): DeleteBuilder => ({
-        eq: async (column: string, value: any) => {
-          try {
-            await self.query('DELETE', `/${table}?${column}=eq.${value}`);
-            return {
-              data: null,
-              error: null
-            };
-          } catch (error) {
-            return {
-              data: null,
-              error
-            };
-          }
-        }
-      })
-    };
+  from(table: string): SimpleTableBuilder {
+    return new SimpleTableBuilder(table, this);
   }
 
   auth = {
@@ -247,7 +279,7 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
     }
   };
 
-  private async query(method: string, endpoint: string, data?: any) {
+  async query(method: string, endpoint: string, data?: any) {
     try {
       const response = await fetch(`${this.apiUrl}${endpoint}`, {
         method,
@@ -271,3 +303,4 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
 }
 
 export const supabase = new SelfHostedSupabaseClient();
+
