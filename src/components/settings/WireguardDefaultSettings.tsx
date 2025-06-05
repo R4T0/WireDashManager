@@ -75,11 +75,13 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const checkResult = await supabase
+      const checkQuery = supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
+
+      const checkResult = await checkQuery;
 
       if (checkResult.error && checkResult.error.code !== 'PGRST116') {
         console.error('Error checking existing defaults:', checkResult.error);
@@ -101,10 +103,12 @@ const WireguardDefaultSettings = () => {
       if (hasExistingRecord) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        const updateResult = await supabase
+        const updateQuery = supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', recordId);
+        
+        const updateResult = await updateQuery;
         
         if (updateResult.error) {
           console.error('Error updating defaults:', updateResult.error);
@@ -113,9 +117,11 @@ const WireguardDefaultSettings = () => {
         }
       } else {
         // Insert new record
-        const insertResult = await supabase
+        const insertQuery = supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
+        
+        const insertResult = await insertQuery;
         
         if (insertResult.error) {
           console.error('Error inserting defaults:', insertResult.error);
