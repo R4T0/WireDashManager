@@ -67,9 +67,10 @@ const SignupForm: React.FC<SignupFormProps> = ({
         const existingResult = await supabase
           .from('system_users')
           .select('id')
-          .eq('email', email);
+          .eq('email', email)
+          .single();
         
-        if (existingResult.data && existingResult.data.length > 0) {
+        if (existingResult.data) {
           throw new Error('Este email já está em uso');
         }
         
