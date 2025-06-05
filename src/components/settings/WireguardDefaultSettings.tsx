@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase';
+import type { Database } from '@/integrations/supabase/types';
 
 // Interface for default wireguard settings
 interface WireguardDefaults {
@@ -101,24 +102,28 @@ const WireguardDefaultSettings = () => {
       if (hasExistingRecord) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        const { error: updateError } = await supabase
+        const updateOperation = supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', recordId);
         
-        if (updateError) {
-          console.error('Error updating defaults:', updateError);
+        const updateResult = await updateOperation;
+        
+        if (updateResult.error) {
+          console.error('Error updating defaults:', updateResult.error);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const { error: insertError } = await supabase
+        const insertOperation = supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertError) {
-          console.error('Error inserting defaults:', insertError);
+        const insertResult = await insertOperation;
+        
+        if (insertResult.error) {
+          console.error('Error inserting defaults:', insertResult.error);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
