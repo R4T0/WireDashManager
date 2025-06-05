@@ -7,20 +7,10 @@ interface SupabaseResponse<T> {
   error: any;
 }
 
-interface QueryBuilder<T = any> {
-  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
-  order: (column: string, options: any) => QueryBuilder<T>;
-  limit: (count: number) => QueryBuilder<T>;
-  single: () => Promise<SupabaseResponse<T>>;
-  maybeSingle: () => Promise<SupabaseResponse<T>>;
-  select: (columns?: string) => QueryBuilder<T>;
-}
-
-// Simplified SelectQueryBuilder without extending Promise
 interface SelectQueryBuilder<T = any> {
-  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
-  order: (column: string, options: any) => Promise<SupabaseResponse<T[]>>;
-  limit: (count: number) => Promise<SupabaseResponse<T[]>>;
+  eq: (column: string, value: any) => SelectQueryBuilder<T>;
+  order: (column: string, options: any) => SelectQueryBuilder<T>;
+  limit: (count: number) => SelectQueryBuilder<T>;
   single: () => Promise<SupabaseResponse<T>>;
   maybeSingle: () => Promise<SupabaseResponse<T>>;
   then: (onfulfilled?: any, onrejected?: any) => Promise<SupabaseResponse<T[]>>;
@@ -68,42 +58,56 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
     return {
       select: (columns = '*') => {
         const baseQuery = `/${table}?select=${columns}`;
+        let currentQuery = baseQuery;
+        let filters: string[] = [];
         
-        // Create a simple object that implements SelectQueryBuilder
         const queryBuilder: SelectQueryBuilder = {
           eq: (column: string, value: any) => {
-            const query = `${baseQuery}&${column}=eq.${value}`;
-            return self.query('GET', query).then(data => ({
-              data,
-              error: null
-            }));
+            filters.push(`${column}=eq.${value}`);
+            return queryBuilder;
           },
           order: (column: string, options: any) => {
-            return self.query('GET', baseQuery).then(data => ({
-              data,
-              error: null
-            }));
+            const direction = options?.ascending === false ? 'desc' : 'asc';
+            filters.push(`order=${column}.${direction}`);
+            return queryBuilder;
           },
           limit: (count: number) => {
-            return self.query('GET', baseQuery).then(data => ({
-              data,
-              error: null
-            }));
+            filters.push(`limit=${count}`);
+            return queryBuilder;
           },
-          single: () => {
-            return self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-              data: data[0] || null,
-              error: null
-            }));
+          single: async () => {
+            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
+            try {
+              const data = await self.query('GET', `${query}&limit=1`);
+              return {
+                data: data[0] || null,
+                error: null
+              };
+            } catch (error) {
+              return {
+                data: null,
+                error
+              };
+            }
           },
-          maybeSingle: () => {
-            return self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-              data: data[0] || null,
-              error: null
-            }));
+          maybeSingle: async () => {
+            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
+            try {
+              const data = await self.query('GET', `${query}&limit=1`);
+              return {
+                data: data[0] || null,
+                error: null
+              };
+            } catch (error) {
+              return {
+                data: null,
+                error
+              };
+            }
           },
           then: (onfulfilled?: any, onrejected?: any) => {
-            return self.query('GET', baseQuery).then(data => ({
+            const query = filters.length > 0 ? `${baseQuery}&${filters.join('&')}` : baseQuery;
+            return self.query('GET', query).then(data => ({
               data,
               error: null
             })).then(onfulfilled, onrejected);
