@@ -115,7 +115,7 @@ const WireguardDefaultSettings = () => {
         // Insert new record
         const insertResult = await supabase
           .from('wireguard_defaults')
-          .insert(defaultsData);
+          .insert([defaultsData]);
         
         if (insertResult.error) {
           console.error('Error inserting defaults:', insertResult.error);
