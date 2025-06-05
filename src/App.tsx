@@ -23,59 +23,57 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App: React.FC = () => (
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <MikrotikProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* Rota de autenticação - acessível sem login */}
-                <Route path="/auth" element={<Auth />} />
-                
-                {/* Rotas protegidas - requerem autenticação */}
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Layout><Dashboard /></Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/peers" element={
-                  <ProtectedRoute>
-                    <Layout><Peers /></Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/interfaces" element={
-                  <ProtectedRoute>
-                    <Layout><Interfaces /></Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/generate-config" element={
-                  <ProtectedRoute>
-                    <Layout><GenerateConfig /></Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/qr-code" element={
-                  <ProtectedRoute>
-                    <Layout><QRCode /></Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <Layout><Settings /></Layout>
-                  </ProtectedRoute>
-                } />
-                
-                {/* Rota para página não encontrada */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </MikrotikProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <MikrotikProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Rota de autenticação - acessível sem login */}
+              <Route path="/auth" element={<Auth />} />
+              
+              {/* Rotas protegidas - requerem autenticação */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Layout><Dashboard /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/peers" element={
+                <ProtectedRoute>
+                  <Layout><Peers /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/interfaces" element={
+                <ProtectedRoute>
+                  <Layout><Interfaces /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/generate-config" element={
+                <ProtectedRoute>
+                  <Layout><GenerateConfig /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/qr-code" element={
+                <ProtectedRoute>
+                  <Layout><QRCode /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Layout><Settings /></Layout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Rota para página não encontrada */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </MikrotikProvider>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
