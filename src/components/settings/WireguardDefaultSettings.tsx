@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase';
-import type { PostgrestError } from '@supabase/supabase-js';
 
 // Interface for default wireguard settings
 interface WireguardDefaults {
@@ -76,17 +75,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const { data: existingRecords, error: checkError }: { 
-        data: { id: string }[] | null; 
-        error: PostgrestError | null 
-      } = await supabase
+      const checkResult = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking existing defaults:', checkError);
+      if (checkResult.error && checkResult.error.code !== 'PGRST116') {
+        console.error('Error checking existing defaults:', checkResult.error);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -99,29 +95,30 @@ const WireguardDefaultSettings = () => {
       };
 
       // Check if we have existing records
-      const hasExistingRecord = existingRecords && existingRecords.length > 0;
+      const existingRecords = checkResult.data || [];
+      const hasExistingRecord = existingRecords.length > 0;
       
       if (hasExistingRecord) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        const { error: updateError }: { error: PostgrestError | null } = await supabase
+        const updateResult = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', recordId);
         
-        if (updateError) {
-          console.error('Error updating defaults:', updateError);
+        if (updateResult.error) {
+          console.error('Error updating defaults:', updateResult.error);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const { error: insertError }: { error: PostgrestError | null } = await supabase
+        const insertResult = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        if (insertError) {
-          console.error('Error inserting defaults:', insertError);
+        if (insertResult.error) {
+          console.error('Error inserting defaults:', insertResult.error);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
