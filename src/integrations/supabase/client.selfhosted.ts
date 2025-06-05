@@ -1,4 +1,3 @@
-
 // Cliente simplificado para modo self-hosted
 // Este arquivo simula a interface do Supabase para manter compatibilidade
 
@@ -111,24 +110,20 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
         return promise;
       },
       
-      insert: (data: any): InsertBuilder => ({
-        select: async (columns = '*') => {
-          try {
-            const result = await self.query('POST', `/${table}`, data);
-            return {
-              data: Array.isArray(result) ? result : [result],
-              error: null
-            };
-          } catch (error) {
-            return {
-              data: null,
-              error
-            };
-          }
-        }
-      }),
+      insert: (data: any) => {
+        // Return a promise that resolves to the expected format
+        return self.query('POST', `/${table}`, data)
+          .then(result => ({
+            data: Array.isArray(result) ? result : [result],
+            error: null
+          }))
+          .catch(error => ({
+            data: null,
+            error
+          }));
+      },
       
-      update: (data: any): UpdateBuilder => ({
+      update: (data: any) => ({
         eq: async (column: string, value: any) => {
           try {
             const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
