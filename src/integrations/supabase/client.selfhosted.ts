@@ -16,12 +16,14 @@ interface QueryBuilder<T = any> {
   select: (columns?: string) => QueryBuilder<T>;
 }
 
-interface SelectQueryBuilder<T = any> extends Promise<SupabaseResponse<T[]>> {
-  eq: (column: string, value: any) => SelectQueryBuilder<T>;
-  order: (column: string, options: any) => SelectQueryBuilder<T>;
-  limit: (count: number) => SelectQueryBuilder<T>;
+// Simplified SelectQueryBuilder without extending Promise
+interface SelectQueryBuilder<T = any> {
+  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
+  order: (column: string, options: any) => Promise<SupabaseResponse<T[]>>;
+  limit: (count: number) => Promise<SupabaseResponse<T[]>>;
   single: () => Promise<SupabaseResponse<T>>;
   maybeSingle: () => Promise<SupabaseResponse<T>>;
+  then: (onfulfilled?: any, onrejected?: any) => Promise<SupabaseResponse<T[]>>;
 }
 
 interface InsertBuilder<T = any> {
@@ -67,33 +69,48 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
       select: (columns = '*') => {
         const baseQuery = `/${table}?select=${columns}`;
         
-        // Create the main promise that resolves to the expected format
-        const promise = self.query('GET', baseQuery).then(data => ({
-          data,
-          error: null
-        })) as SelectQueryBuilder;
-
-        // Add chainable methods
-        promise.eq = (column: string, value: any) => {
-          const query = `${baseQuery}&${column}=eq.${value}`;
-          return self.query('GET', query).then(data => ({
-            data,
-            error: null
-          })) as SelectQueryBuilder;
+        // Create a simple object that implements SelectQueryBuilder
+        const queryBuilder: SelectQueryBuilder = {
+          eq: (column: string, value: any) => {
+            const query = `${baseQuery}&${column}=eq.${value}`;
+            return self.query('GET', query).then(data => ({
+              data,
+              error: null
+            }));
+          },
+          order: (column: string, options: any) => {
+            return self.query('GET', baseQuery).then(data => ({
+              data,
+              error: null
+            }));
+          },
+          limit: (count: number) => {
+            return self.query('GET', baseQuery).then(data => ({
+              data,
+              error: null
+            }));
+          },
+          single: () => {
+            return self.query('GET', `${baseQuery}&limit=1`).then(data => ({
+              data: data[0] || null,
+              error: null
+            }));
+          },
+          maybeSingle: () => {
+            return self.query('GET', `${baseQuery}&limit=1`).then(data => ({
+              data: data[0] || null,
+              error: null
+            }));
+          },
+          then: (onfulfilled?: any, onrejected?: any) => {
+            return self.query('GET', baseQuery).then(data => ({
+              data,
+              error: null
+            })).then(onfulfilled, onrejected);
+          }
         };
-
-        promise.order = (column: string, options: any) => promise;
-        promise.limit = (count: number) => promise;
-        promise.single = () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-          data: data[0] || null,
-          error: null
-        }));
-        promise.maybeSingle = () => self.query('GET', `${baseQuery}&limit=1`).then(data => ({
-          data: data[0] || null,
-          error: null
-        }));
         
-        return promise;
+        return queryBuilder;
       },
       
       insert: (data: any): InsertBuilder => {
