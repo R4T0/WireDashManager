@@ -75,16 +75,14 @@ const WireguardDefaultSettings = () => {
     setSavingDefaults(true);
     try {
       // Check if any record exists first
-      const checkQuery = supabase
+      const { data: existingData, error: checkError } = await supabase
         .from('wireguard_defaults')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      const checkResult = await checkQuery;
-
-      if (checkResult.error && checkResult.error.code !== 'PGRST116') {
-        console.error('Error checking existing defaults:', checkResult.error);
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing defaults:', checkError);
         toast.error('Falha ao verificar configurações existentes');
         return;
       }
@@ -97,34 +95,30 @@ const WireguardDefaultSettings = () => {
       };
 
       // Check if we have existing records
-      const existingRecords = checkResult.data || [];
+      const existingRecords = existingData || [];
       const hasExistingRecord = existingRecords.length > 0;
       
       if (hasExistingRecord) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        const updateQuery = supabase
+        const { error: updateError } = await supabase
           .from('wireguard_defaults')
           .update(defaultsData)
           .eq('id', recordId);
         
-        const updateResult = await updateQuery;
-        
-        if (updateResult.error) {
-          console.error('Error updating defaults:', updateResult.error);
+        if (updateError) {
+          console.error('Error updating defaults:', updateError);
           toast.error('Falha ao atualizar configurações padrão');
           return;
         }
       } else {
         // Insert new record
-        const insertQuery = supabase
+        const { error: insertError } = await supabase
           .from('wireguard_defaults')
           .insert(defaultsData);
         
-        const insertResult = await insertQuery;
-        
-        if (insertResult.error) {
-          console.error('Error inserting defaults:', insertResult.error);
+        if (insertError) {
+          console.error('Error inserting defaults:', insertError);
           toast.error('Falha ao salvar configurações padrão');
           return;
         }
