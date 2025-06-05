@@ -7,20 +7,20 @@ interface SupabaseResponse<T> {
   error: any;
 }
 
-interface SelectQueryBuilder<T = any> {
-  eq: (column: string, value: any) => SelectQueryBuilder<T>;
-  order: (column: string, options: any) => SelectQueryBuilder<T>;
-  limit: (count: number) => SelectQueryBuilder<T>;
-  single: () => Promise<SupabaseResponse<T>>;
-  maybeSingle: () => Promise<SupabaseResponse<T>>;
+interface SelectQueryBuilder {
+  eq: (column: string, value: any) => SelectQueryBuilder;
+  order: (column: string, options: any) => SelectQueryBuilder;
+  limit: (count: number) => SelectQueryBuilder;
+  single: () => Promise<SupabaseResponse<any>>;
+  maybeSingle: () => Promise<SupabaseResponse<any>>;
 }
 
-interface InsertBuilder<T = any> {
-  select: (columns?: string) => Promise<SupabaseResponse<T[]>>;
+interface InsertBuilder {
+  select: (columns?: string) => Promise<SupabaseResponse<any[]>>;
 }
 
-interface UpdateBuilder<T = any> {
-  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
+interface UpdateBuilder {
+  eq: (column: string, value: any) => Promise<SupabaseResponse<any[]>>;
 }
 
 interface DeleteBuilder {
