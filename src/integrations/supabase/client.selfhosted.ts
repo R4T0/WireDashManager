@@ -8,7 +8,7 @@ interface SupabaseResponse<T> {
 }
 
 interface QueryBuilder<T = any> {
-  eq: (column: string, value: any) => QueryBuilder<T>;
+  eq: (column: string, value: any) => Promise<SupabaseResponse<T[]>>;
   order: (column: string, options: any) => QueryBuilder<T>;
   limit: (count: number) => QueryBuilder<T>;
   single: () => Promise<SupabaseResponse<T>>;
@@ -76,25 +76,10 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
         // Add chainable methods
         promise.eq = (column: string, value: any) => {
           const query = `${baseQuery}&${column}=eq.${value}`;
-          const chainedPromise = self.query('GET', query).then(data => ({
+          return self.query('GET', query).then(data => ({
             data,
             error: null
           })) as SelectQueryBuilder;
-          
-          // Copy all methods to the new promise
-          chainedPromise.eq = promise.eq;
-          chainedPromise.order = promise.order;
-          chainedPromise.limit = promise.limit;
-          chainedPromise.single = () => self.query('GET', `${query}&limit=1`).then(data => ({
-            data: data[0] || null,
-            error: null
-          }));
-          chainedPromise.maybeSingle = () => self.query('GET', `${query}&limit=1`).then(data => ({
-            data: data[0] || null,
-            error: null
-          }));
-          
-          return chainedPromise;
         };
 
         promise.order = (column: string, options: any) => promise;
@@ -130,7 +115,7 @@ class SelfHostedSupabaseClient implements SelfHostedClient {
         };
       },
       
-      update: (data: any) => ({
+      update: (data: any): UpdateBuilder => ({
         eq: async (column: string, value: any) => {
           try {
             const result = await self.query('PATCH', `/${table}?${column}=eq.${value}`, data);
