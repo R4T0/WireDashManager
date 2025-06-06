@@ -49,13 +49,25 @@ export class EnvironmentService {
       case 'local':
         return 'PostgreSQL Local (localhost:5432)';
       case 'self-hosted':
-        return 'Self-hosted PostgreSQL';
-      case 'production-remote':
-        return 'Supabase Remote (Production)';
+        return 'Self-hosted PostgreSQL (Docker)';
       case 'remote':
-        return 'Supabase Remote (Development)';
+        return 'Supabase Remote';
       default:
         return 'Unknown';
+    }
+  }
+
+  static getCurrentClient() {
+    const mode = getOperationMode();
+    switch (mode) {
+      case 'self-hosted':
+        return 'Self-hosted Client';
+      case 'local':
+        return 'Local Development Client';
+      case 'remote':
+        return 'Supabase Remote Client';
+      default:
+        return 'Unknown Client';
     }
   }
 }
