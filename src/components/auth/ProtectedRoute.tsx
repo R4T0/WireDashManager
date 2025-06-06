@@ -9,7 +9,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  // Add error boundary for useAuth hook
+  let authState;
+  
+  try {
+    authState = useAuth();
+  } catch (error) {
+    console.error('ProtectedRoute: useAuth error:', error);
+    // If useAuth fails, redirect to auth page
+    return <Navigate to="/auth" replace />;
+  }
+
+  const { isAuthenticated, loading } = authState;
 
   if (loading) {
     return (
