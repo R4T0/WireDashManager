@@ -7,16 +7,21 @@ BACKUP_DIR="./backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="wiredash_backup_${DATE}.sql"
 
-echo "🗄️ Iniciando backup do WireDash..."
+echo "🗄️ Iniciando backup do WireDash Self-Hosted..."
 
 # Criar diretório de backup se não existir
 mkdir -p "$BACKUP_DIR"
 
+# Verificar se PostgreSQL está rodando
+if ! docker ps --filter "name=wiredash-postgres" --filter "status=running" | grep -q "wiredash-postgres"; then
+    echo "❌ Container PostgreSQL não está rodando"
+    echo "Execute: docker-compose up -d"
+    exit 1
+fi
+
 # Fazer backup do banco de dados
 echo "📦 Fazendo backup do banco de dados..."
-docker exec -t wiredash-postgres pg_dump -U postgres wireguard_manager > "$BACKUP_DIR/$BACKUP_FILE"
-
-if [ $? -eq 0 ]; then
+if docker exec -t wiredash-postgres pg_dump -U postgres wireguard_manager > "$BACKUP_DIR/$BACKUP_FILE"; then
     echo "✅ Backup criado com sucesso: $BACKUP_DIR/$BACKUP_FILE"
     
     # Compactar backup

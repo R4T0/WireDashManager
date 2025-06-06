@@ -1,47 +1,96 @@
-# Welcome to my project
 
-**Use your preferred IDE**
+# WireDash - Self-Hosted
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Sistema de gerenciamento WireGuard completamente self-hosted com PostgreSQL local.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🚀 Deploy Rápido
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Linux/macOS
+```bash
+chmod +x deploy-selfhosted.sh
+./deploy-selfhosted.sh
 ```
 
-**Edit a file directly in GitHub**
+### Windows
+```cmd
+deploy-selfhosted.bat
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📋 Pré-requisitos
 
-**Use GitHub Codespaces**
+- Docker (v20.10+)
+- Docker Compose (v2.0+)
+- 2GB RAM livres
+- 10GB espaço em disco
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🔧 Configuração
 
-## What technologies are used for this project?
+O sistema está configurado para modo **self-hosted exclusivamente**:
 
-This project is built with:
+- **Aplicação**: http://localhost:8080
+- **PostgreSQL**: localhost:5432
+  - Usuário: `postgres`
+  - Senha: `postgres`
+  - Database: `wireguard_manager`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📋 Comandos Úteis
+
+```bash
+# Deploy completo
+./deploy-selfhosted.sh
+
+# Parar serviços
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+
+# Fazer backup
+./backup.sh
+
+# Reiniciar
+docker-compose restart
+
+# Status
+docker-compose ps
+```
+
+## 🗄️ Backup
+
+Backup automático incluso:
+```bash
+./backup.sh    # Linux/macOS
+backup.bat     # Windows
+```
+
+## 📁 Estrutura
+
+```
+wiredash/
+├── deploy-selfhosted.sh    # Script principal de deploy
+├── deploy-selfhosted.bat   # Script Windows
+├── backup.sh              # Backup Linux/macOS
+├── backup.bat             # Backup Windows
+├── docker-compose.yml     # Configuração Docker
+├── Dockerfile            # Build da aplicação
+├── .env                  # Variáveis de ambiente
+└── logs/                 # Logs do sistema
+```
+
+## 🔒 Segurança
+
+Para produção, altere:
+1. Senhas do PostgreSQL em `.env`
+2. Configure HTTPS
+3. Configure firewall
+4. Backup automático
+
+## 🆘 Solução de Problemas
+
+1. **Porta ocupada**: Altere portas no `docker-compose.yml`
+2. **Erro de memória**: Aumente RAM disponível
+3. **Erro de permissão**: Execute como administrador/sudo
+
+---
+
+**Sistema configurado para uso self-hosted exclusivo com PostgreSQL local.**
