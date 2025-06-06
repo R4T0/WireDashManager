@@ -26,49 +26,29 @@ export class EnvironmentService {
 
   static logEnvironmentInfo() {
     const info = this.getEnvironmentInfo();
-    console.group('🔧 Environment Configuration');
+    console.group('🏠 Self-Hosted Environment Configuration');
     console.log('Operation Mode:', info.mode);
     console.log('Self-hosted:', info.selfHosted);
     console.log('Development:', info.isDev);
     console.log('Production:', info.isProd);
     console.log('Node Environment:', info.nodeEnv);
     console.log('Environment Variables:', info.envVars);
+    console.log('🎯 Sistema configurado para modo Self-Hosted exclusivamente');
     console.groupEnd();
     return info;
   }
 
   static isUsingLocalDatabase() {
-    const info = this.getEnvironmentInfo();
-    return info.mode === 'local' || info.mode === 'self-hosted';
+    // Sempre retorna true no modo self-hosted
+    return true;
   }
 
   static getDatabaseConnectionString() {
-    const info = this.getEnvironmentInfo();
-    
-    switch (info.mode) {
-      case 'local':
-        return 'PostgreSQL Local (localhost:5432)';
-      case 'self-hosted':
-        return 'Self-hosted PostgreSQL (Docker)';
-      case 'remote':
-        return 'Supabase Remote';
-      default:
-        return 'Unknown';
-    }
+    return 'Self-hosted PostgreSQL (Docker Container)';
   }
 
   static getCurrentClient() {
-    const mode = getOperationMode();
-    switch (mode) {
-      case 'self-hosted':
-        return 'Self-hosted Client';
-      case 'local':
-        return 'Local Development Client';
-      case 'remote':
-        return 'Supabase Remote Client';
-      default:
-        return 'Unknown Client';
-    }
+    return 'Self-hosted PostgreSQL Client';
   }
 }
 

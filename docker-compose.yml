@@ -1,9 +1,29 @@
 
+# Docker Compose principal - Self-Hosted
+# Para iniciar o sistema: docker-compose up -d
+
 version: '3.8'
 services:
+  # Aplicação WireDash
+  wiredash-app:
+    image: wiredash-local:latest
+    container_name: wiredash
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_USE_LOCAL_SUPABASE=false
+      - VITE_SELF_HOSTED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Banco de dados PostgreSQL
   postgres:
     image: postgres:16
-    restart: always
+    container_name: wiredash-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
