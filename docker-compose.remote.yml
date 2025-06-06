@@ -1,0 +1,28 @@
+
+# Docker Compose para uso com Supabase REMOTO
+# Use este arquivo quando quiser rodar a aplicação localmente 
+# mas conectando ao Supabase na nuvem
+#
+# Para usar:
+# 1. Construa a imagem: docker build -t wiredash-local .
+# 2. Execute: docker-compose -f docker-compose.remote.yml up -d
+
+version: '3.8'
+
+services:
+  wiredash-app:
+    image: wiredash-local:latest  # Usa imagem local construída
+    container_name: wiredash-remote
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_USE_LOCAL_SUPABASE=false
+      - VITE_SELF_HOSTED=false
+    restart: unless-stopped
+    networks:
+      - wiredash-network
+
+networks:
+  wiredash-network:
+    driver: bridge

@@ -1,25 +1,38 @@
 
+# Docker Compose para modo SELF-HOSTED COMPLETO
+# Use este arquivo para rodar tudo localmente:
+# - Aplicação WireDash
+# - Banco de dados PostgreSQL
+# - Sem dependências externas
+#
+# Para usar:
+# 1. Construa a imagem: docker build -t wiredash-local .
+# 2. Execute: docker-compose -f docker-compose.selfhosted.yml up -d
+
 version: '3.8'
 
 services:
+  # Aplicação WireDash
   wiredash-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: wiredash-local:latest  # Usa imagem local construída
+    container_name: wiredash-selfhosted
+    restart: unless-stopped
     ports:
       - "8080:80"
     environment:
       - NODE_ENV=production
       - VITE_USE_LOCAL_SUPABASE=false
-      - VITE_SELF_HOSTED=false
-    restart: unless-stopped
+      - VITE_SELF_HOSTED=true
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - wiredash-network
 
+  # Banco de dados PostgreSQL
   postgres:
     image: postgres:16
+    container_name: wiredash-postgres-selfhosted
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -40,6 +53,7 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
 
 networks:
   wiredash-network:

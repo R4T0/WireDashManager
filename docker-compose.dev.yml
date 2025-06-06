@@ -1,0 +1,36 @@
+
+# Docker Compose para DESENVOLVIMENTO LOCAL
+# Use este arquivo apenas para rodar o PostgreSQL localmente
+# enquanto desenvolve a aplicação com npm/bun run dev
+#
+# Para usar:
+# 1. Execute: docker-compose -f docker-compose.dev.yml up -d
+# 2. Configure .env.local com VITE_USE_LOCAL_SUPABASE=true
+# 3. Execute: npm run dev
+
+version: '3.8'
+
+services:
+  # Apenas PostgreSQL para desenvolvimento
+  postgres:
+    image: postgres:16
+    container_name: wiredash-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wireguard_manager
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_dev:
+    driver: local
