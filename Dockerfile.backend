@@ -13,9 +13,12 @@ RUN bun install
 # Copiar código fonte
 COPY . .
 
-# Criar script de entrada para o backend
+# Copiar e configurar script de entrada
 COPY docker-entrypoint-backend.sh /docker-entrypoint-backend.sh
-RUN chmod +x /docker-entrypoint-backend.sh
+
+# Converter line endings para Unix e definir permissões
+RUN sed -i 's/\r$//' /docker-entrypoint-backend.sh && \
+    chmod +x /docker-entrypoint-backend.sh
 
 # Instalar netcat para health checks
 RUN apt-get update && apt-get install -y netcat-openbsd curl && rm -rf /var/lib/apt/lists/*
