@@ -4,7 +4,6 @@ setlocal enabledelayedexpansion
 
 REM =============================================================================
 REM WireDash Self-Hosted Deploy Script (Windows)
-REM Script principal para deploy completo do WireDash em modo self-hosted
 REM =============================================================================
 
 echo 🚀 WireDash Self-Hosted Deploy
@@ -47,53 +46,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo ✅ Todos os pré-requisitos atendidos!
 
 REM =============================================================================
-REM 2. PREPARAÇÃO DO AMBIENTE
-REM =============================================================================
-
-echo.
-echo 📁 Preparando ambiente...
-
-REM Criar estrutura de diretórios
-if not exist logs mkdir logs
-if not exist backups mkdir backups
-if not exist data mkdir data
-if not exist data\postgres mkdir data\postgres
-if not exist config mkdir config
-
-REM Verificar arquivos essenciais
-if not exist "docker-compose.yml" (
-    echo ❌ Arquivo docker-compose.yml não encontrado!
-    pause
-    exit /b 1
-)
-
-if not exist "Dockerfile" (
-    echo ❌ Dockerfile não encontrado!
-    pause
-    exit /b 1
-)
-
-REM Configurar variáveis de ambiente se não existir
-if not exist ".env" (
-    echo ⚙️ Criando arquivo .env...
-    (
-        echo # Configuração Self-Hosted WireDash
-        echo VITE_USE_LOCAL_SUPABASE=false
-        echo VITE_SELF_HOSTED=true
-        echo NODE_ENV=production
-        echo.
-        echo # PostgreSQL Configuration
-        echo POSTGRES_USER=postgres
-        echo POSTGRES_PASSWORD=postgres
-        echo POSTGRES_DB=wireguard_manager
-    ) > .env
-    echo ✅ Arquivo .env criado!
-)
-
-echo ✅ Ambiente preparado!
-
-REM =============================================================================
-REM 3. LIMPEZA DE INSTALAÇÕES ANTERIORES
+REM 2. LIMPEZA DE INSTALAÇÕES ANTERIORES
 REM =============================================================================
 
 echo.
@@ -113,7 +66,7 @@ docker rmi wiredash-local:latest >nul 2>&1
 echo ✅ Limpeza concluída!
 
 REM =============================================================================
-REM 4. BUILD DA APLICAÇÃO
+REM 3. BUILD DA APLICAÇÃO
 REM =============================================================================
 
 echo.
@@ -126,12 +79,14 @@ if %ERRORLEVEL% EQU 0 (
     echo ✅ Imagem construída com sucesso!
 ) else (
     echo ❌ Erro ao construir imagem Docker
+    echo Verificando logs de build...
+    docker build -t wiredash-local:latest . --no-cache
     pause
     exit /b 1
 )
 
 REM =============================================================================
-REM 5. DEPLOY DOS SERVIÇOS
+REM 4. DEPLOY DOS SERVIÇOS
 REM =============================================================================
 
 echo.
@@ -144,12 +99,14 @@ if %ERRORLEVEL% EQU 0 (
     echo ✅ Containers iniciados!
 ) else (
     echo ❌ Erro ao iniciar containers
+    echo Verificando logs...
+    docker-compose logs
     pause
     exit /b 1
 )
 
 REM =============================================================================
-REM 6. VERIFICAÇÃO DE SAÚDE DOS SERVIÇOS
+REM 5. VERIFICAÇÃO DE SAÚDE DOS SERVIÇOS
 REM =============================================================================
 
 echo.
@@ -157,50 +114,52 @@ echo 🔍 Verificando saúde dos serviços...
 
 REM Aguardar serviços ficarem prontos
 echo ⏳ Aguardando serviços ficarem prontos...
-timeout /t 15 /nobreak > nul
+timeout /t 10 /nobreak > nul
 
 REM Verificar PostgreSQL
 echo Verificando PostgreSQL...
-docker exec wiredash-postgres pg_isready -U postgres >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo ✅ PostgreSQL está funcionando!
-) else (
-    echo ❌ PostgreSQL não está respondendo
-    docker-compose logs postgres
-    pause
-    exit /b 1
+for /l %%i in (1,1,30) do (
+    docker exec wiredash-postgres pg_isready -U postgres >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo ✅ PostgreSQL está funcionando!
+        goto :postgres_ready
+    )
+    echo ⏳ Aguardando PostgreSQL... (%%i/30^)
+    timeout /t 2 /nobreak > nul
 )
+echo ❌ PostgreSQL não está respondendo
+docker-compose logs postgres
+pause
+exit /b 1
+
+:postgres_ready
 
 REM Verificar aplicação WireDash
 echo Verificando aplicação WireDash...
-curl -f http://localhost:8080 >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo ✅ WireDash está funcionando!
-) else (
-    echo ⏳ Aguardando WireDash ficar disponível...
-    timeout /t 10 /nobreak > nul
+for /l %%i in (1,1,30) do (
     curl -f http://localhost:8080 >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
+    if !errorlevel! equ 0 (
         echo ✅ WireDash está funcionando!
-    ) else (
-        echo ❌ WireDash não está respondendo
-        docker-compose logs wiredash-app
-        pause
-        exit /b 1
+        goto :wiredash_ready
     )
+    echo ⏳ Aguardando WireDash... (%%i/30^)
+    timeout /t 2 /nobreak > nul
 )
+echo ❌ WireDash não está respondendo
+echo Verificando logs do container...
+docker logs wiredash-selfhosted
+pause
+exit /b 1
+
+:wiredash_ready
 
 REM =============================================================================
-REM 7. VERIFICAÇÃO FINAL E INFORMAÇÕES
+REM 6. VERIFICAÇÃO FINAL
 REM =============================================================================
 
 echo.
 echo 📊 Status final dos serviços...
 docker-compose ps
-
-REM =============================================================================
-REM 8. SUCESSO - INFORMAÇÕES FINAIS
-REM =============================================================================
 
 echo.
 echo 🎉 DEPLOY CONCLUÍDO COM SUCESSO!
@@ -218,17 +177,6 @@ echo    Logs:           docker-compose logs -f
 echo    Reiniciar:      docker-compose restart
 echo    Status:         docker-compose ps
 echo    Backup:         backup.bat
-echo    Atualizar:      deploy-selfhosted.bat
-echo.
-echo 📁 DIRETÓRIOS:
-echo    Logs:           .\logs\
-echo    Backups:        .\backups\
-echo    Dados:          .\data\
-echo.
-echo 🔧 CONFIGURAÇÃO:
-echo    Ambiente:       Self-hosted (PostgreSQL local)
-echo    Modo:           Produção
-echo    Persistência:   Habilitada
 echo.
 echo ✅ Sistema pronto para uso!
 
