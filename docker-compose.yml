@@ -7,7 +7,7 @@ services:
   # Aplicação WireDash
   wiredash-app:
     image: wiredash-local:latest
-    container_name: wiredash
+    container_name: wiredash-selfhosted
     restart: unless-stopped
     ports:
       - "8080:80"
