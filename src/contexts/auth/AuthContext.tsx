@@ -1,12 +1,11 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase';
-import { SystemUser, AuthState, LoginCredentials, RegisterCredentials } from '@/types/auth';
+import { SystemUser, AuthState, LoginCredentials } from '@/types/auth';
 import { toast } from '@/components/ui/use-toast';
 
 interface AuthContextType extends AuthState {
   signIn: (credentials: LoginCredentials) => Promise<void>;
-  signUp: (credentials: RegisterCredentials) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -115,74 +114,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (credentials: RegisterCredentials) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    try {
-      // First check if user already exists
-      const existingUserResult = await supabase
-        .from('system_users')
-        .select('id')
-        .eq('email', credentials.email)
-        .single();
-
-      if (existingUserResult.data) {
-        throw new Error('Este email já está em uso');
-      }
-
-      // Create new user
-      const insertResult = await supabase
-        .from('system_users')
-        .insert({
-          email: credentials.email,
-          password_hash: credentials.password, // In a real app, hash this password
-          is_admin: false // New users are not admins by default
-        })
-        .select();
-
-      if (insertResult.error) {
-        throw new Error('Erro ao criar conta: ' + insertResult.error.message);
-      }
-
-      const userData = insertResult.data[0];
-
-      // Map database user to our SystemUser type
-      const user: SystemUser = {
-        id: userData.id,
-        email: userData.email,
-        isAdmin: userData.is_admin,
-        created_at: userData.created_at
-      };
-
-      toast({
-        title: "Conta criada com sucesso",
-        description: "Você foi registrado e autenticado no sistema",
-      });
-
-      // Automatically log the user in
-      localStorage.setItem('wireguard_user', JSON.stringify(user));
-      
-      setState({
-        user,
-        isAuthenticated: true,
-        loading: false,
-        error: null
-      });
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Falha no registro'
-      }));
-      toast({
-        title: "Erro no registro",
-        description: error.message || "Não foi possível criar sua conta",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   const signOut = async () => {
     try {
       // Clear authentication from localStorage
@@ -215,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     ...state,
     signIn,
-    signUp,
     signOut
   };
 
