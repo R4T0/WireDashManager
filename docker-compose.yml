@@ -4,7 +4,39 @@
 
 version: '3.8'
 services:
-  # Aplicação WireDash
+  # Backend WireDash (API)
+  wiredash-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: wiredash-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=wireguard_manager
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/wireguard_manager
+      - JWT_SECRET=${JWT_SECRET:-default-jwt-secret-change-in-production}
+      - SESSION_SECRET=${SESSION_SECRET:-default-session-secret-change-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wiredash-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Aplicação WireDash (Frontend)
   wiredash-app:
     image: wiredash-local:latest
     container_name: wiredash-selfhosted
@@ -15,10 +47,11 @@ services:
       - NODE_ENV=production
       - VITE_USE_LOCAL_SUPABASE=false
       - VITE_SELF_HOSTED=true
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
+      - VITE_API_URL=http://localhost:3000
     depends_on:
       postgres:
+        condition: service_healthy
+      wiredash-backend:
         condition: service_healthy
     networks:
       - wiredash-network
