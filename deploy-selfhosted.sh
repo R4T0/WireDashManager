@@ -118,7 +118,7 @@ print_color $GREEN "✅ Todos os pré-requisitos atendidos!"
 print_color $BLUE "📁 Preparando ambiente..."
 
 # Criar estrutura de diretórios
-mkdir -p {logs,backups,data/postgres,config}
+mkdir -p {logs,backups,data/postgres}
 
 # Verificar arquivos essenciais
 if [ ! -f "docker-compose.yml" ]; then
@@ -131,21 +131,37 @@ if [ ! -f "Dockerfile" ]; then
     exit 1
 fi
 
+if [ ! -f "Dockerfile.backend" ]; then
+    print_color $RED "❌ Dockerfile.backend não encontrado!"
+    exit 1
+fi
+
 # Configurar variáveis de ambiente se não existir
 if [ ! -f ".env" ]; then
     print_color $YELLOW "⚙️ Criando arquivo .env..."
-    cat > .env << EOF
+    if [ -f ".env.selfhosted.example" ]; then
+        cp .env.selfhosted.example .env
+        print_color $GREEN "✅ Arquivo .env criado a partir do exemplo!"
+    else
+        cat > .env << EOF
 # Configuração Self-Hosted WireDash
 VITE_USE_LOCAL_SUPABASE=false
 VITE_SELF_HOSTED=true
+VITE_API_URL=http://localhost:3000
 NODE_ENV=production
 
 # PostgreSQL Configuration
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=wireguard_manager
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/wireguard_manager
+
+# Segurança (ALTERE EM PRODUÇÃO!)
+JWT_SECRET=change-this-in-production
+SESSION_SECRET=change-this-in-production
 EOF
-    print_color $GREEN "✅ Arquivo .env criado!"
+        print_color $GREEN "✅ Arquivo .env criado!"
+    fi
 fi
 
 print_color $GREEN "✅ Ambiente preparado!"
@@ -161,8 +177,8 @@ print_color $YELLOW "Parando containers existentes..."
 docker-compose down >/dev/null 2>&1 || true
 
 # Parar containers com nomes específicos
-docker stop wiredash-selfhosted wiredash-postgres >/dev/null 2>&1 || true
-docker rm wiredash-selfhosted wiredash-postgres >/dev/null 2>&1 || true
+docker stop wiredash-selfhosted wiredash-backend wiredash-postgres >/dev/null 2>&1 || true
+docker rm wiredash-selfhosted wiredash-backend wiredash-postgres >/dev/null 2>&1 || true
 
 # Remover imagens antigas se existirem
 docker rmi wiredash-local:latest >/dev/null 2>&1 || true
@@ -173,16 +189,18 @@ print_color $GREEN "✅ Limpeza concluída!"
 # 4. BUILD DA APLICAÇÃO
 # =============================================================================
 
-print_color $BLUE "🔨 Construindo aplicação..."
+print_color $BLUE "🔨 Construindo aplicações..."
 
-# Build da imagem Docker
-print_color $YELLOW "Construindo imagem Docker..."
+# Build da imagem Frontend (Nginx + SPA)
+print_color $YELLOW "Construindo imagem Frontend..."
 if docker build -t wiredash-local:latest .; then
-    print_color $GREEN "✅ Imagem construída com sucesso!"
+    print_color $GREEN "✅ Imagem Frontend construída com sucesso!"
 else
-    print_color $RED "❌ Erro ao construir imagem Docker"
+    print_color $RED "❌ Erro ao construir imagem Frontend"
     exit 1
 fi
+
+print_color $GREEN "✅ Todas as imagens construídas com sucesso!"
 
 # =============================================================================
 # 5. DEPLOY DOS SERVIÇOS
@@ -224,19 +242,35 @@ else
     exit 1
 fi
 
-# Verificar aplicação WireDash
-print_color $YELLOW "Verificando aplicação WireDash..."
-if check_container_health "wiredash-selfhosted"; then
-    # Aguardar aplicação ficar disponível
-    if wait_for_service "http://localhost:8080" "WireDash"; then
-        print_color $GREEN "✅ WireDash está funcionando!"
+# Verificar Backend
+print_color $YELLOW "Verificando Backend WireDash..."
+if check_container_health "wiredash-backend"; then
+    # Aguardar backend ficar disponível
+    if wait_for_service "http://localhost:3000/health" "Backend WireDash"; then
+        print_color $GREEN "✅ Backend WireDash está funcionando!"
     else
-        print_color $RED "❌ WireDash não está respondendo"
+        print_color $RED "❌ Backend WireDash não está respondendo"
+        docker-compose logs wiredash-backend
+        exit 1
+    fi
+else
+    print_color $RED "❌ Container Backend WireDash não está rodando"
+    exit 1
+fi
+
+# Verificar aplicação Frontend (Nginx)
+print_color $YELLOW "Verificando Frontend WireDash..."
+if check_container_health "wiredash-selfhosted"; then
+    # Aguardar frontend ficar disponível
+    if wait_for_service "http://localhost:8080" "Frontend WireDash"; then
+        print_color $GREEN "✅ Frontend WireDash está funcionando!"
+    else
+        print_color $RED "❌ Frontend WireDash não está respondendo"
         docker-compose logs wiredash-app
         exit 1
     fi
 else
-    print_color $RED "❌ Container WireDash não está rodando"
+    print_color $RED "❌ Container Frontend WireDash não está rodando"
     exit 1
 fi
 
@@ -262,6 +296,7 @@ print_color $GREEN "🎉 DEPLOY CONCLUÍDO COM SUCESSO!"
 print_color $GREEN "================================"
 echo ""
 print_color $BLUE "🌐 Aplicação WireDash: http://localhost:8080"
+print_color $BLUE "🔧 API Backend: http://localhost:3000"
 print_color $BLUE "🗄️  PostgreSQL: localhost:5432"
 print_color $BLUE "   📋 Usuário: postgres"
 print_color $BLUE "   🔐 Senha: postgres"
@@ -270,6 +305,8 @@ echo ""
 print_color $YELLOW "📋 COMANDOS ÚTEIS:"
 echo "   Parar:          docker-compose down"
 echo "   Logs:           docker-compose logs -f"
+echo "   Logs Backend:   docker-compose logs -f wiredash-backend"
+echo "   Logs Frontend:  docker-compose logs -f wiredash-app"
 echo "   Reiniciar:      docker-compose restart"
 echo "   Status:         docker-compose ps"
 echo "   Backup:         ./backup.sh"
@@ -283,6 +320,7 @@ echo ""
 print_color $YELLOW "🔧 CONFIGURAÇÃO:"
 echo "   Ambiente:       Self-hosted (PostgreSQL local)"
 echo "   Modo:           Produção"
+echo "   Arquitetura:    Frontend (Nginx) + Backend (Bun) + PostgreSQL"
 echo "   Persistência:   Habilitada"
 echo ""
 print_color $GREEN "✅ Sistema pronto para uso!"
