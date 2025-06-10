@@ -66,3 +66,8 @@ EXECUTE FUNCTION trigger_set_timestamp();
 INSERT INTO public.wireguard_defaults (endpoint, port, dns, allowed_ip_range)
 SELECT '', '51820', '1.1.1.1', '10.0.0.0/24'
 WHERE NOT EXISTS (SELECT 1 FROM public.wireguard_defaults);
+
+-- Insert default admin user if none exists
+INSERT INTO public.system_users (email, password_hash, is_admin)
+SELECT 'example@wiredash.com', 'wiredash', true
+WHERE NOT EXISTS (SELECT 1 FROM public.system_users WHERE email = 'example@wiredash.com');
