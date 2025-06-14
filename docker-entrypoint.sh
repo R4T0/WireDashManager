@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # =============================================================================
-# WireDash Frontend Docker Entrypoint  
+# WireDash Frontend Docker Entrypoint
 # Script de inicialização para o container do frontend (Nginx)
 # =============================================================================
 
